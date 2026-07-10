@@ -1,0 +1,47 @@
+name: Daily GitHub Trending
+
+on:
+  schedule:
+    # 每天北京时间 09:00（UTC 01:00）
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo-courier-daily
+  cancel-in-progress: false
+
+jobs:
+  daily-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install RepoCourier
+        run: pip install .
+      - name: Generate and deliver report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          AI_BASE_URL: ${{ secrets.AI_BASE_URL }}
+          AI_MODEL: ${{ secrets.AI_MODEL }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
+          SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+          ONEBOT_URL: ${{ secrets.ONEBOT_URL }}
+          ONEBOT_TOKEN: ${{ secrets.ONEBOT_TOKEN }}
+          ONEBOT_USER_ID: ${{ secrets.ONEBOT_USER_ID }}
+        run: repo-courier --config config/config.yaml
+      - name: Commit generated reports
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports data/history
+          git diff --cached --quiet || git commit -m "chore: publish daily trending report"
+          git push

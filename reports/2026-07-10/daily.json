@@ -1,0 +1,119 @@
+{
+  "date": "2026-07-10",
+  "repositories": [
+    {
+      "rank": 2,
+      "owner": "addyosmani",
+      "name": "agent-skills",
+      "url": "https://github.com/addyosmani/agent-skills",
+      "description": "Production-grade engineering skills for AI coding agents.",
+      "language": "JavaScript",
+      "stars": 76267,
+      "forks": 8190,
+      "stars_today": 2554,
+      "topics": [],
+      "license": "",
+      "homepage": "",
+      "open_issues": 0,
+      "updated_at": "",
+      "readme_excerpt": "",
+      "summary": "Production-grade engineering skills for AI coding agents",
+      "highlights": [
+        "今日新增约 2,554 Stars",
+        "主要语言：JavaScript"
+      ],
+      "use_cases": [
+        "AI 原型验证与能力集成"
+      ],
+      "category": "AI / 机器学习",
+      "risk_note": "未从 GitHub 元数据识别到开源许可证，采用前请确认授权。",
+      "relevance_score": 54,
+      "recommendation": "深挖",
+      "why_for_you": "命中你的关注词：agent；今日新增约 2,554 Stars。",
+      "matched_interests": [
+        "agent"
+      ],
+      "pick_rank": 1,
+      "previous_rank": null,
+      "is_new": true,
+      "full_name": "addyosmani/agent-skills",
+      "rank_change": "NEW"
+    },
+    {
+      "rank": 5,
+      "owner": "wonderwhy-er",
+      "name": "DesktopCommanderMCP",
+      "url": "https://github.com/wonderwhy-er/DesktopCommanderMCP",
+      "description": "This is MCP server for Claude that gives it terminal control, file system search and diff file editing capabilities",
+      "language": "TypeScript",
+      "stars": 6707,
+      "forks": 879,
+      "stars_today": 185,
+      "topics": [],
+      "license": "",
+      "homepage": "",
+      "open_issues": 0,
+      "updated_at": "",
+      "readme_excerpt": "",
+      "summary": "This is MCP server for Claude that gives it terminal control, file system search and diff file editing capabilities",
+      "highlights": [
+        "今日新增约 185 Stars",
+        "主要语言：TypeScript"
+      ],
+      "use_cases": [
+        "提升开发、调试或自动化效率"
+      ],
+      "category": "开发工具",
+      "risk_note": "未从 GitHub 元数据识别到开源许可证，采用前请确认授权。",
+      "relevance_score": 24,
+      "recommendation": "关注",
+      "why_for_you": "命中你的关注词：mcp；今日新增约 185 Stars。",
+      "matched_interests": [
+        "mcp"
+      ],
+      "pick_rank": 2,
+      "previous_rank": null,
+      "is_new": true,
+      "full_name": "wonderwhy-er/DesktopCommanderMCP",
+      "rank_change": "NEW"
+    },
+    {
+      "rank": 8,
+      "owner": "unclecode",
+      "name": "crawl4ai",
+      "url": "https://github.com/unclecode/crawl4ai",
+      "description": "🚀🤖 Crawl4AI: Open-source LLM Friendly Web Crawler & Scraper. Don't be shy, join here: https://discord.gg/jP8KfhDhyN",
+      "language": "Python",
+      "stars": 72031,
+      "forks": 7387,
+      "stars_today": 215,
+      "topics": [],
+      "license": "",
+      "homepage": "",
+      "open_issues": 0,
+      "updated_at": "",
+      "readme_excerpt": "",
+      "summary": "🚀🤖 Crawl4AI: Open-source LLM Friendly Web Crawler & Scraper. Don't be shy, join here: https://discord.gg/jP8KfhDhyN",
+      "highlights": [
+        "今日新增约 215 Stars",
+        "主要语言：Python"
+      ],
+      "use_cases": [
+        "AI 原型验证与能力集成"
+      ],
+      "category": "AI / 机器学习",
+      "risk_note": "未从 GitHub 元数据识别到开源许可证，采用前请确认授权。",
+      "relevance_score": 24,
+      "recommendation": "关注",
+      "why_for_you": "命中你的关注词：llm；今日新增约 215 Stars。",
+      "matched_interests": [
+        "llm"
+      ],
+      "pick_rank": 3,
+      "previous_rank": null,
+      "is_new": true,
+      "full_name": "unclecode/crawl4ai",
+      "rank_change": "NEW"
+    }
+  ]
+}

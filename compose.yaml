@@ -1,0 +1,10 @@
+services:
+  courier:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./config:/app/config:ro
+      - ./reports:/app/reports
+      - ./data:/app/data

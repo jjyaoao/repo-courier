@@ -1,0 +1,43 @@
+github:
+  # 可选：python、go、rust、javascript 等；留空表示全部语言
+  language: ""
+  # daily / weekly / monthly
+  since: daily
+  spoken_language_code: ""
+  # 多抓一些候选，再从中选出最适合你的 3 个
+  limit: 20
+  include_readme: true
+  readme_max_chars: 4000
+
+summary:
+  enabled: true
+  # 密钥和模型推荐通过 AI_API_KEY、AI_MODEL 环境变量传入
+  base_url: https://api.openai.com/v1
+  model: ""
+  language: zh-CN
+  timeout_seconds: 90
+
+profile:
+  # 这是 RepoCourier 唯一需要你认真填写的配置。
+  # 推荐使用仓库描述和 Topics 中常见的英文关键词。
+  interests:
+    - agent
+    - llm
+    - mcp
+    - developer tools
+    - automation
+    - self-hosted
+  exclude_keywords:
+    - awesome list
+    - interview
+    - tutorial collection
+  daily_picks: 3
+
+report:
+  output_dir: reports
+  data_dir: data/history
+  title: RepoCourier · 个性化开源速递
+
+push:
+  enabled: true
+  # Webhook/密钥全部使用环境变量，避免提交到仓库
