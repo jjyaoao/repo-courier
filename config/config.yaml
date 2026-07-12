@@ -33,6 +33,19 @@ profile:
     - tutorial collection
   daily_picks: 3
 
+academic:
+  enabled: true
+  # Academic 密钥只通过 export academic_api_key="..." 导入
+  base_url: https://www.dmxapi.cn/v1
+  sources:
+    arxiv:
+      enabled: true
+      # 最多拉取的候选数；规则初筛数量固定为 final_picks 的 2 倍
+      candidate_limit: 1000
+      final_picks: 3
+      introduction_max_chars: 12000
+      max_analysis_workers: 50
+
 report:
   output_dir: reports
   data_dir: data/history

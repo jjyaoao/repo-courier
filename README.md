@@ -1,8 +1,10 @@
 # 📮 RepoCourier
 
-> 每天从 GitHub Trending 中，最多挑出 3 个真正与你有关的项目。
+> 每天从 GitHub Trending 和学术数据库中，挑出真正与你有关的项目与论文。
 
 GitHub Trending 很热闹，但你真正关心的通常只有几个。RepoCourier 根据你的关注词重新排序榜单，给出 `深挖 / 关注 / 略过` 判断，并解释为什么这个项目适合你。没有足够相关的项目时宁缺毋滥，不会为了凑数而推送。
+
+Academic 学术源与 GitHub 独立处理，只在最终日报和推送摘要中合并。首个支持的学术子源是 ArXiv，默认检索北京时间昨天 00:00:00～23:59:59 提交的论文。
 
 ```text
 1. [深挖 86/100] owner/agent-tool · 今日 +1,208 ⭐
@@ -62,6 +64,8 @@ export REPO_COURIER_INTERESTS="rust,cli,database,self-hosted"
 
 ```bash
 repo-courier --dry-run
+# 补跑指定北京时间自然日
+repo-courier --date 2026-07-12 --dry-run
 ```
 
 结果会写入：
@@ -98,9 +102,11 @@ repo-courier
 
 ```bash
 export AI_API_KEY="your-key"
-export AI_BASE_URL="https://api.openai.com/v1"
 export AI_MODEL="your-model-name"
+export academic_api_key="your-academic-key"
 ```
+
+GitHub 摘要使用 `summary.base_url` 和 `AI_API_KEY`；Academic 分析使用 `academic.base_url` 和独立的 `academic_api_key` 环境变量。
 
 ## 每天自动运行
 
@@ -108,9 +114,9 @@ export AI_MODEL="your-model-name"
 
 工作流会：
 
-1. 扫描当天 GitHub Trending。
-2. 按你的关注词选出最多 3 个项目。
-3. 只为入选项目读取 README、生成报告并发送到已配置渠道。
+1. 扫描 GitHub Trending与Academic 学术源，并检索指定北京时间自然日的 ArXiv 论文。
+2. 两个来源分别筛选和分析，只在最后合并。
+3. 只为入选项目读取 README，为初筛论文补充 Introduction，再生成报告并发送到已配置渠道。
 4. 把报告和历史快照提交回仓库。
 
 ## Docker
@@ -139,6 +145,7 @@ src/repo_courier/
 ├── github.py         # GitHub 信息补充
 ├── personalize.py    # 个性化三选（核心）
 ├── summary.py        # AI / 本地摘要
+├── academic/         # Academic 流水线与 ArXiv 子源
 ├── report.py         # Markdown / HTML / JSON
 ├── pushers/          # 飞书、微信、QQ
 └── runner.py         # 流程编排

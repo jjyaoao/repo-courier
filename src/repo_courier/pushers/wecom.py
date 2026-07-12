@@ -16,7 +16,10 @@ class WeComPusher:
         try:
             response = self.client.post(
                 self.webhook,
-                json={"msgtype": "markdown", "markdown": {"content": f"# {title}\n{content}"[:4000]}},
+                json={
+                    "msgtype": "markdown",
+                    "markdown": {"content": f"# {title}\n{content}"[:4000]},
+                },
             )
             response.raise_for_status()
             data = response.json()

@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 from __future__ import annotations
 
 import html
@@ -6,14 +7,14 @@ from datetime import date
 from pathlib import Path
 
 from .config import ReportConfig
-from .models import Repository
+from .models import AcademicPaper, DailyReport
 
 
 class ReportWriter:
     def __init__(self, config: ReportConfig) -> None:
         self.config = config
 
-    def write(self, repositories: list[Repository], day: date) -> dict[str, Path]:
+    def write(self, report: DailyReport, day: date) -> dict[str, Path]:
         output_dir = Path(self.config.output_dir) / day.isoformat()
         output_dir.mkdir(parents=True, exist_ok=True)
         paths = {
@@ -21,13 +22,18 @@ class ReportWriter:
             "html": output_dir / "daily.html",
             "json": output_dir / "daily.json",
         }
-        paths["markdown"].write_text(self.markdown(repositories, day), encoding="utf-8")
-        paths["html"].write_text(self.html(repositories, day), encoding="utf-8")
+        paths["markdown"].write_text(self.markdown(report, day), encoding="utf-8")
+        paths["html"].write_text(self.html(report, day), encoding="utf-8")
         paths["json"].write_text(
             json.dumps(
                 {
                     "date": day.isoformat(),
-                    "repositories": [item.to_dict() for item in repositories],
+                    "academic_window": report.academic_window,
+                    "repositories": [item.to_dict() for item in report.repositories],
+                    "academic": {
+                        "papers": [item.to_dict() for item in report.papers],
+                        "error": report.academic_error or None,
+                    },
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -37,20 +43,23 @@ class ReportWriter:
         )
         return paths
 
-    def markdown(self, repositories: list[Repository], day: date) -> str:
+    def markdown(self, report: DailyReport, day: date) -> str:
+        repositories = report.repositories
         lines = [
             f"# {self.config.title}",
             "",
-            f"> {day.isoformat()} · 今天只看这 {len(repositories)} 个",
+            f"> {day.isoformat()} · {len(repositories)} 个开源项目 · {len(report.papers)} 篇论文",
             "",
             "根据你的关注词对 GitHub Trending 重新排序。分数表示与你的匹配程度，"
             "不是项目质量的绝对排名。",
+            "",
+            "## GitHub 推荐",
             "",
         ]
         for item in repositories:
             lines.extend(
                 [
-                    f"## {item.pick_rank}. [{item.full_name}]({item.url})",
+                    f"### {item.pick_rank}. [{item.full_name}]({item.url})",
                     "",
                     f"`{item.recommendation}` · 匹配度 **{item.relevance_score}/100** · "
                     f"Trending 第 {item.rank} 名 `{item.rank_change}`",
@@ -74,6 +83,13 @@ class ReportWriter:
             )
             if item.risk_note:
                 lines.extend([f"> 注意：{item.risk_note}", ""])
+        lines.extend(["## 学术论文", ""])
+        if report.academic_error:
+            lines.extend(["> Academic 数据源本次获取失败，GitHub 报告不受影响。", ""])
+        elif not report.papers:
+            lines.extend(["本检索窗口没有入选论文。", ""])
+        for paper in report.papers:
+            lines.extend(self._paper_markdown(paper))
         lines.extend(
             [
                 "---",
@@ -84,7 +100,8 @@ class ReportWriter:
         )
         return "\n".join(lines)
 
-    def html(self, repositories: list[Repository], day: date) -> str:
+    def html(self, report: DailyReport, day: date) -> str:
+        repositories = report.repositories
         cards = []
         for item in repositories:
             highlights = "".join(f"<li>{html.escape(value)}</li>" for value in item.highlights)
@@ -101,13 +118,19 @@ class ReportWriter:
                 <div class="columns"><section><h3>特点</h3><ul>{highlights}</ul></section>
                 <section><h3>适合场景</h3><ul>{use_cases}</ul></section></div>{risk}</div></article>"""
             )
+        paper_cards = "".join(self._paper_html(paper) for paper in report.papers)
+        if report.academic_error:
+            paper_cards = '<p class="risk">Academic 数据源本次获取失败，GitHub 报告不受影响。</p>'
+        elif not paper_cards:
+            paper_cards = "<p>本检索窗口没有入选论文。</p>"
         return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(self.config.title)}</title>
 <style>body{{margin:0;background:#f6f8fa;color:#1f2328;font:15px/1.6 system-ui,sans-serif}}main{{max-width:900px;margin:auto;padding:32px 18px}}header{{padding:26px;background:#0d1117;color:white;border-radius:16px;margin-bottom:18px}}header h1{{margin:0 0 6px}}article{{display:flex;gap:18px;background:white;padding:24px;margin:14px 0;border:1px solid #d0d7de;border-radius:14px}}.rank{{font-size:32px;font-weight:800;color:#8250df}}.content{{flex:1}}h2{{margin:0}}h2 a{{color:#0969da;text-decoration:none}}small{{font-size:12px;background:#fbefff;color:#8250df;padding:3px 7px;border-radius:12px}}.why{{background:#f6f8ff;border-left:4px solid #8250df;padding:10px 12px}}.meta{{color:#59636e;margin:12px 0}}.columns{{display:grid;grid-template-columns:1fr 1fr;gap:20px}}h3{{font-size:14px;margin-bottom:2px}}.risk{{background:#fff8c5;padding:8px 12px;border-radius:8px}}footer{{text-align:center;color:#656d76;padding:20px}}@media(max-width:600px){{.columns{{grid-template-columns:1fr}}article{{padding:16px}}}}</style></head>
-<body><main><header><h1>{html.escape(self.config.title)}</h1><div>{day.isoformat()} · 今天只看这 {len(repositories)} 个</div></header>
-{''.join(cards)}<footer>Generated by RepoCourier</footer></main></body></html>"""
+<body><main><header><h1>{html.escape(self.config.title)}</h1><div>{day.isoformat()} · {len(repositories)} 个开源项目 · {len(report.papers)} 篇论文</div></header>
+<h1>GitHub 推荐</h1>{''.join(cards)}<h1>学术论文</h1>{paper_cards}<footer>Generated by RepoCourier</footer></main></body></html>"""
 
-    def digest(self, repositories: list[Repository], day: date, limit: int = 5) -> str:
+    def digest(self, report: DailyReport, day: date, limit: int = 5) -> str:
+        repositories = report.repositories
         lines = [f"📮 RepoCourier · {day.isoformat()}", f"今天只看这 {min(limit, len(repositories))} 个：", ""]
         for item in repositories[:limit]:
             lines.extend(
@@ -120,5 +143,40 @@ class ReportWriter:
                     "",
                 ]
             )
-        lines.append("少看榜单，多看真正与你有关的项目。")
+        if report.papers:
+            lines.extend(["📚 学术论文", ""])
+            for paper in report.papers:
+                lines.extend(
+                    [
+                        f"{paper.pick_rank}. [相关 {paper.relevance_score}/10 · 创新 {paper.innovation_score}/10] {paper.title}",
+                        paper.summary[:120],
+                        paper.url,
+                        "",
+                    ]
+                )
+        lines.append("少看榜单，多看真正与你有关的内容。")
         return "\n".join(lines)
+
+    @staticmethod
+    def _paper_markdown(paper: AcademicPaper) -> list[str]:
+        authors = "、".join(paper.authors[:5]) or "作者未知"
+        submitted = paper.submitted_at.date().isoformat() if paper.submitted_at else "未知"
+        return [
+            f"### {paper.pick_rank}. [{paper.title}]({paper.url})",
+            "",
+            f"匹配度 **{paper.relevance_score}/10** · 创新性 **{paper.innovation_score}/10** · 综合分 **{paper.combined_score:.1f}/10**",
+            "",
+            paper.summary,
+            "",
+            f"**作者**：{authors} · **提交日期**：{submitted} · **来源**：ArXiv",
+            "",
+        ]
+
+    @staticmethod
+    def _paper_html(paper: AcademicPaper) -> str:
+        authors = "、".join(paper.authors[:5]) or "作者未知"
+        return f"""<article><div class="rank">{paper.pick_rank}</div><div class="content">
+        <h2><a href="{html.escape(paper.url)}">{html.escape(paper.title)}</a>
+        <small>相关 {paper.relevance_score}/10 · 创新 {paper.innovation_score}/10</small></h2>
+        <p>{html.escape(paper.summary)}</p><div class="meta">{html.escape(authors)} · ArXiv · 综合分 {paper.combined_score:.1f}/10</div>
+        </div></article>"""

@@ -2,7 +2,7 @@ import json
 from datetime import date
 
 from repo_courier.config import ReportConfig
-from repo_courier.models import Repository
+from repo_courier.models import AcademicPaper, DailyReport, Repository
 from repo_courier.report import ReportWriter
 
 
@@ -33,7 +33,7 @@ def test_writer_outputs_three_formats(tmp_path) -> None:
     writer = ReportWriter(
         ReportConfig(output_dir=str(tmp_path / "reports"), data_dir=str(tmp_path / "history"))
     )
-    paths = writer.write([_repository()], date(2026, 7, 10))
+    paths = writer.write(DailyReport(repositories=[_repository()]), date(2026, 7, 10))
 
     assert set(paths) == {"markdown", "html", "json"}
     assert "acme/rocket" in paths["markdown"].read_text(encoding="utf-8")
@@ -44,6 +44,35 @@ def test_writer_outputs_three_formats(tmp_path) -> None:
 
 
 def test_digest_is_short_and_contains_links() -> None:
-    digest = ReportWriter(ReportConfig()).digest([_repository()], date(2026, 7, 10))
+    digest = ReportWriter(ReportConfig()).digest(
+        DailyReport(repositories=[_repository()]), date(2026, 7, 10)
+    )
     assert "acme/rocket" in digest
     assert "https://github.com/acme/rocket" in digest
+
+
+def test_writer_merges_academic_only_at_report_layer(tmp_path) -> None:
+    paper = AcademicPaper(
+        source="arxiv",
+        source_id="2607.00001",
+        title="Agent Research",
+        url="https://arxiv.org/abs/2607.00001",
+        relevance_score=9,
+        innovation_score=8,
+        combined_score=8.7,
+        summary="一篇相关论文。",
+        pick_rank=1,
+    )
+    writer = ReportWriter(ReportConfig(output_dir=str(tmp_path / "reports")))
+
+    paths = writer.write(
+        DailyReport(repositories=[_repository()], papers=[paper]),
+        date(2026, 7, 12),
+    )
+
+    markdown = paths["markdown"].read_text(encoding="utf-8")
+    payload = json.loads(paths["json"].read_text(encoding="utf-8"))
+    assert "## GitHub 推荐" in markdown
+    assert "## 学术论文" in markdown
+    assert payload["repositories"][0]["full_name"] == "acme/rocket"
+    assert payload["academic"]["papers"][0]["source_id"] == "2607.00001"
