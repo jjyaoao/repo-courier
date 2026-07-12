@@ -1,0 +1,143 @@
+{
+  "date": "2026-07-12",
+  "repositories": [
+    {
+      "rank": 8,
+      "owner": "wonderwhy-er",
+      "name": "DesktopCommanderMCP",
+      "url": "https://github.com/wonderwhy-er/DesktopCommanderMCP",
+      "description": "This is MCP server for Claude that gives it terminal control, file system search and diff file editing capabilities",
+      "language": "TypeScript",
+      "stars": 7806,
+      "forks": 972,
+      "stars_today": 909,
+      "topics": [
+        "agent",
+        "ai",
+        "code-analysis",
+        "code-generation",
+        "gemini-cli-extension",
+        "mcp",
+        "terminal-ai",
+        "terminal-automation",
+        "vibe-coding"
+      ],
+      "license": "MIT",
+      "homepage": "https://desktopcommander.app/",
+      "open_issues": 176,
+      "updated_at": "2026-07-12T04:15:22Z",
+      "readme_excerpt": "# Desktop Commander MCP\n### Search, update, manage files and run terminal commands with AI\n\n[![npm downloads](https://img.shields.io/npm/dw/@wonderwhy-er/desktop-commander)](https://www.npmjs.com/package/@wonderwhy-er/desktop-commander)\n[![AgentAudit Verified](https://agentaudit.dev/api/badge/desktop-commander)](https://agentaudit.dev/skills/desktop-commander)\n[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/wonderwhy-er/DesktopCommanderMCP)](https://archestra.ai/mcp-catalog/wonderwhy-er__desktopcommandermcp)\n[![smithery badge](https://smithery.ai/badge/@wonderwhy-er/desktop-commander)](https://smithery.ai/server/@wonderwhy-er/desktop-commander)\n[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg)](https://www.buymeacoffee.com/wonderwhyer)\n\n\n[![Discord](https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/kQ27sNnZr7)\n\n\nWork with code and text, run processes, and automate tasks, going far beyond other AI editors - while using host client subscriptions instead of API token costs.\n\n<a href=\"https://glama.ai/mcp/servers/zempur9oh4\">\n  <img width=\"380\" height=\"200\" src=\"https://glama.ai/mcp/servers/zempur9oh4/badge\" alt=\"Desktop Commander MCP\" />\n</a>\n\n## 🖥️ Try the Desktop Commander App (Beta)\n\n**Want a better experience?** The Desktop Commander App gives you everything the MCP server does, plus:\n\n- **Use any AI model** — Claude, GPT-4.5, Gemini 2.5, or any model you prefer\n- **See file changes live** — visual file previews as AI edits your files\n- **Add custom MCPs and context** — extend with your own tools, no config files\n- **Coming soon** — skills system, dictation, background scheduled tasks, and more\n\n**👉 [Download the App](https://desktopcommander.app/#download)** (macOS & Windows)\n\n> The MCP server below still works great with Claude Desktop and other MCP clients — the app is for those who want a dedicated, polished experience.\n\n## Table of Contents\n- [Features](#features)\n- [How to install](#how-to-install)\n- [Getting Started](#getting-started)\n- [Usage](#usage)\n- [File Preview UI & Markdown Editor](#file-preview-ui--markdown-editor)\n- [Handling Long-Running Commands](#handling-long-running-commands)\n- [Work in Progress and TODOs](#roadmap)\n- [Sponsors and Supporters](#support-desktop-commander)\n- [Website](#website)\n- [Media](#media)\n- [Testimonials](#testimonials)\n- [Frequently Asked Questions](#frequently-asked-questions)\n- [Contributing](#contributing)\n- [License](#license)\n\nAll of your AI development tools in one place.\nDesktop Commander puts all dev tools in one chat.\nExecute long-running terminal commands on your computer and manage processes through Model Context Protocol (MCP). Built on top of [MCP Filesystem Server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) to provide additional search and replace file editing capabilities.\n\n## Features\n\n- **Remote AI Control** - Use Desktop Commander from ChatGPT, Claude web, and other AI services via [Remote MCP](https://mcp.desktopcommander.app)\n- **File Preview UI** - Visual file previews in Claude Desktop with rendered markdown, inline images, expandable content, built-in markdown editor, and quick \"Open in folder\" access\n- **Enhanced terminal commands with interactive process control**\n- **Execute code in memory (Python, Node.js, R) without saving files**\n- **Instant data analysis - just ask to analyze CSV/JSON/Excel files**\n- **Native Excel file support** - Read, write, edit, and search Excel files (.xlsx, .xls, .xlsm) without external tools\n- **PDF support** - Read PDFs with text extraction, create new PDFs from markdown, modify existing PDFs\n- **DOCX support** - Read, create, edit, and search Word documents (.docx) with surgical XML editing and markdown-to-DOCX conversion\n- **Interact with running processes (SSH, databases, development servers)**\n- Execute terminal commands with output streaming\n- Command timeout and",
+      "summary": "This is MCP server for Claude that gives it terminal control, file system search and diff file editing capabilities",
+      "highlights": [
+        "今日新增约 909 Stars",
+        "主要语言：TypeScript",
+        "关键词：agent、ai、code-analysis、code-generation"
+      ],
+      "use_cases": [
+        "AI 原型验证与能力集成"
+      ],
+      "category": "AI / 机器学习",
+      "risk_note": "",
+      "relevance_score": 100,
+      "recommendation": "深挖",
+      "why_for_you": "命中你的关注词：agent、mcp、automation；今日新增约 909 Stars。",
+      "matched_interests": [
+        "agent",
+        "mcp",
+        "automation"
+      ],
+      "pick_rank": 1,
+      "previous_rank": 1,
+      "is_new": false,
+      "full_name": "wonderwhy-er/DesktopCommanderMCP",
+      "rank_change": "↓7"
+    },
+    {
+      "rank": 4,
+      "owner": "google-labs-code",
+      "name": "stitch-skills",
+      "url": "https://github.com/google-labs-code/stitch-skills",
+      "description": "A library of Agent Skills designed to work with the Stitch MCP server. Each skill follows the Agent Skills open standard, for compatibility with coding agents such as Antigravity, Gemini CLI, Claude Code, Cursor.",
+      "language": "TypeScript",
+      "stars": 7115,
+      "forks": 947,
+      "stars_today": 340,
+      "topics": [],
+      "license": "Apache-2.0",
+      "homepage": "https://stitch.withgoogle.com/docs/mcp/setup",
+      "open_issues": 21,
+      "updated_at": "2026-07-12T04:11:46Z",
+      "readme_excerpt": "# Stitch Design Skills\n\nA collection of agent skills and plugins for [Google Stitch](https://stitch.withgoogle.com), following the [Agent Skills](https://agentskills.io) open standard. Compatible with coding agents such as Codex, Antigravity, Gemini CLI, Claude Code, and Cursor.\n\n## Quick Start\n\n### 1. Install Plugins (Recommended)\nThe fastest way to set up the full Stitch plugin suite globally.\n\n#### Codex\n\nAdd the Stitch Skills marketplace, then install the plugins you need.\n\n<details open>\n<summary><strong>Via CLI</strong> (recommended)</summary>\n\n```bash\ncodex plugin marketplace add google-labs-code/stitch-skills --ref main \\\n  --sparse .agents/plugins \\\n  --sparse plugins/stitch-design \\\n  --sparse plugins/stitch-build \\\n  --sparse plugins/stitch-utilities\n```\n\n> [!TIP]\n> The `--sparse` flags are optional — they limit the checkout to only the\n> listed paths for a faster clone. Omit them to pull the entire repository.\n\n</details>\n\n<details>\n<summary><strong>Via the Codex UI</strong></summary>\n\nNavigate to **Settings → Plugin Marketplaces → Add** and fill in:\n\n| Field | Value |\n|---|---|\n| **Source** | `https://github.com/google-labs-code/stitch-skills` |\n| **Git ref** | `main` |\n| **Sparse paths** | *(optional)* `.agents/plugins`, `plugins/stitch-design`, `plugins/stitch-build`, `plugins/stitch-utilities` |\n\n</details>\n\nOnce the marketplace is registered, install any combination of:\n\n- **`stitch-design`** — design-focused skills\n- **`stitch-build`** — build and component skills\n- **`stitch-utilities`** — utility and helper skills\n\n#### Claude Code & Cursor\n\n```bash\n# Claude Code — installs into the current project\nnpx plugins add google-labs-code/stitch-skills --scope project --target claude-code\n```\n\n```bash\n# Cursor — installs into the current workspace\nnpx plugins add google-labs-code/stitch-skills --scope workspace --target cursor\n```\n\n### 2. Install Skills Selectively\nChoose only the specific skills you need.\n\n> [!IMPORTANT]\n> Stitch Design Skills often have inter-dependencies. If you choose to install skills selectively, ensure you include all required dependencies.\n\n```bash\nnpx skills add google-labs-code/stitch-skills\n```\n\nYou can run the following commands to see the help documentation for plugins and skills:\n\n```bash\nnpx plugins --help\n\nnpx skills --help\n```\n\n## Prerequisites\n\nThese skills require the **Stitch MCP** server to be configured and running in your agent's environment. Make sure you have followed the [Stitch MCP Setup Instructions](https://stitch.withgoogle.com/docs/mcp/setup/) to register the server and set up appropriate environment variables and credentials.\n\n## Available Plugins\n\n### Design (`stitch-design`)\n\nCore design workflows for creating, managing, and optimizing designs within Stitch.\n\n| Skill | Description | Prompt Example |\n|---|---|---|\n| [stitch::code-to-design](plugins/stitch-design/skills/code-to-design/) | Convert frontend code (React, Vue, etc.) to a Stitch Design via HTML extraction + design system + upload | *\"Upload the frontend code at `/path/to/dashboard` into a Stitch project named 'Dashboard-Migration-2026'.\"* |\n| [stitch::generate-design](plugins/stitch-design/skills/generate-design/) | Generate new screens from text or images, edit existing screens, and create design variants | · *\"Make a browse tab for a mobile app for romance and date night ideas.\"*<br>· *\"Edit the login screen to add a 'Remember Me' checkbox and change the button color to blue.\"*<br>· *\"Generate 3 design variants of the home screen with dark mode and high-density layouts.\"* |\n| [stitch::manage-design-system](plugins/stitch-design/skills/manage-design-system/) | Manage design systems in Stitch — upload DESIGN.md and apply themes to screens | *\"Upload our design system from `.stitch/DESIGN.md` and apply it to all screens.\"* |\n| [stitch::extract-design-md](plugins/stitch-design/skills/extract-design-md/) | Extract a comprehensive DESIGN.md directly from frontend source code | *\"Scan `/src` and extract the de",
+      "summary": "A library of Agent Skills designed to work with the Stitch MCP server. Each skill follows the Agent Skills open standard, for compatibility with coding agents such as Antigravity, Gemini CLI, Claude Code, Cursor",
+      "highlights": [
+        "今日新增约 340 Stars",
+        "主要语言：TypeScript"
+      ],
+      "use_cases": [
+        "AI 原型验证与能力集成"
+      ],
+      "category": "AI / 机器学习",
+      "risk_note": "",
+      "relevance_score": 53,
+      "recommendation": "深挖",
+      "why_for_you": "命中你的关注词：agent、mcp；今日新增约 340 Stars。",
+      "matched_interests": [
+        "agent",
+        "mcp"
+      ],
+      "pick_rank": 2,
+      "previous_rank": 15,
+      "is_new": false,
+      "full_name": "google-labs-code/stitch-skills",
+      "rank_change": "↑11"
+    },
+    {
+      "rank": 12,
+      "owner": "home-assistant",
+      "name": "core",
+      "url": "https://github.com/home-assistant/core",
+      "description": ":house_with_garden: Open source home automation that puts local control and privacy first.",
+      "language": "Python",
+      "stars": 88739,
+      "forks": 38051,
+      "stars_today": 80,
+      "topics": [
+        "asyncio",
+        "hacktoberfest",
+        "home-automation",
+        "internet-of-things",
+        "iot",
+        "mqtt",
+        "python",
+        "raspberry-pi"
+      ],
+      "license": "Apache-2.0",
+      "homepage": "https://www.home-assistant.io",
+      "open_issues": 3340,
+      "updated_at": "2026-07-12T04:16:42Z",
+      "readme_excerpt": "Home Assistant |Chat Status|\n=================================================================================\n\nOpen source home automation that puts local control and privacy first. Powered by a worldwide community of tinkerers and DIY enthusiasts. Perfect to run on a Raspberry Pi or a local server.\n\nCheck out `home-assistant.io <https://home-assistant.io>`__ for `a\ndemo <https://demo.home-assistant.io>`__, `installation instructions <https://home-assistant.io/getting-started/>`__,\n`tutorials <https://home-assistant.io/getting-started/automation/>`__ and `documentation <https://home-assistant.io/docs/>`__.\n\n|screenshot-states|\n\nFeatured integrations\n---------------------\n\n|screenshot-integrations|\n\nThe system is built using a modular approach so support for other devices or actions can be implemented easily. See also the `section on architecture <https://developers.home-assistant.io/docs/architecture_index/>`__ and the `section on creating your own\ncomponents <https://developers.home-assistant.io/docs/creating_component_index/>`__.\n\nIf you run into issues while using Home Assistant or during development\nof a component, check the `Home Assistant help section <https://home-assistant.io/help/>`__ of our website for further help and information.\n\n|ohf-logo|\n\n.. |Chat Status| image:: https://img.shields.io/discord/330944238910963714.svg\n   :target: https://www.home-assistant.io/join-chat/\n.. |screenshot-states| image:: https://raw.githubusercontent.com/home-assistant/core/dev/.github/assets/screenshot-states.png\n   :target: https://demo.home-assistant.io\n.. |screenshot-integrations| image:: https://raw.githubusercontent.com/home-assistant/core/dev/.github/assets/screenshot-integrations.png\n   :target: https://home-assistant.io/integrations/\n.. |ohf-logo| image:: https://www.openhomefoundation.org/badges/home-assistant.png\n   :alt: Home Assistant - A project from the Open Home Foundation\n   :target: https://www.openhomefoundation.org/\n",
+      "summary": ":house_with_garden: Open source home automation that puts local control and privacy first",
+      "highlights": [
+        "今日新增约 80 Stars",
+        "主要语言：Python",
+        "关键词：asyncio、hacktoberfest、home-automation、internet-of-things"
+      ],
+      "use_cases": [
+        "安全研究与防护能力建设"
+      ],
+      "category": "安全",
+      "risk_note": "",
+      "relevance_score": 36,
+      "recommendation": "关注",
+      "why_for_you": "命中你的关注词：automation；今日新增约 80 Stars。",
+      "matched_interests": [
+        "automation"
+      ],
+      "pick_rank": 3,
+      "previous_rank": null,
+      "is_new": true,
+      "full_name": "home-assistant/core",
+      "rank_change": "NEW"
+    }
+  ]
+}
