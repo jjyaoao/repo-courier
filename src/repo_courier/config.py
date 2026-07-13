@@ -55,7 +55,9 @@ class ArxivConfig:
 class AcademicConfig:
     enabled: bool = True
     api_key: str = ""
-    base_url: str = "https://www.dmxapi.cn/v1"
+    base_url: str = "https://idealab.alibaba-inc.com/api/v1/chat/completions"
+    model: str = "bigmodel/GLM-5"
+    verify_ssl: bool = True
     arxiv: ArxivConfig = field(default_factory=ArxivConfig)
 
 

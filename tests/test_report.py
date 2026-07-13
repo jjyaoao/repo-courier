@@ -59,8 +59,9 @@ def test_writer_merges_academic_only_at_report_layer(tmp_path) -> None:
         url="https://arxiv.org/abs/2607.00001",
         relevance_score=9,
         innovation_score=8,
-        combined_score=8.7,
-        summary="一篇相关论文。",
+        combined_score=12.8,
+        research_motivation="现有方法难以稳定完成复杂任务。",
+        core_contributions="提出新的智能体协作方法。",
         pick_rank=1,
     )
     writer = ReportWriter(ReportConfig(output_dir=str(tmp_path / "reports")))
@@ -74,5 +75,7 @@ def test_writer_merges_academic_only_at_report_layer(tmp_path) -> None:
     payload = json.loads(paths["json"].read_text(encoding="utf-8"))
     assert "## GitHub 推荐" in markdown
     assert "## 学术论文" in markdown
+    assert "研究动机" in markdown
+    assert "核心贡献" in markdown
     assert payload["repositories"][0]["full_name"] == "acme/rocket"
     assert payload["academic"]["papers"][0]["source_id"] == "2607.00001"

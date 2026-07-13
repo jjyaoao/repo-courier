@@ -14,7 +14,7 @@
 
 This is MCP server for Claude that gives it terminal control, file system search and diff file editing capabilities
 
-**数据**：⭐ 8,035 · 今日 +210 · Fork 991 · TypeScript · MIT
+**数据**：⭐ 8,087 · 今日 +210 · Fork 993 · TypeScript · MIT
 
 **特点**
 
@@ -34,7 +34,7 @@ This is MCP server for Claude that gives it terminal control, file system search
 
 "Vibe-Trading: Your Personal Trading Agent"
 
-**数据**：⭐ 20,756 · 今日 +768 · Fork 3,620 · Python · MIT
+**数据**：⭐ 20,986 · 今日 +768 · Fork 3,659 · Python · MIT
 
 **特点**
 
@@ -54,7 +54,7 @@ This is MCP server for Claude that gives it terminal control, file system search
 
 100+ AI Agent & RAG apps you can actually run — clone, customize, ship
 
-**数据**：⭐ 118,764 · 今日 +408 · Fork 17,653 · Python · Apache-2.0
+**数据**：⭐ 118,976 · 今日 +408 · Fork 17,682 · Python · Apache-2.0
 
 **特点**
 

@@ -149,7 +149,8 @@ class ReportWriter:
                 lines.extend(
                     [
                         f"{paper.pick_rank}. [相关 {paper.relevance_score}/10 · 创新 {paper.innovation_score}/10] {paper.title}",
-                        paper.summary[:120],
+                        f"研究动机：{paper.research_motivation[:120]}",
+                        f"核心贡献：{paper.core_contributions[:120]}",
                         paper.url,
                         "",
                     ]
@@ -164,9 +165,11 @@ class ReportWriter:
         return [
             f"### {paper.pick_rank}. [{paper.title}]({paper.url})",
             "",
-            f"匹配度 **{paper.relevance_score}/10** · 创新性 **{paper.innovation_score}/10** · 综合分 **{paper.combined_score:.1f}/10**",
+            f"匹配度 **{paper.relevance_score}/10** · 创新性 **{paper.innovation_score}/10** · 综合分 **{paper.combined_score:.1f}**",
             "",
-            paper.summary,
+            f"**研究动机**：{paper.research_motivation}",
+            "",
+            f"**核心贡献**：{paper.core_contributions}",
             "",
             f"**作者**：{authors} · **提交日期**：{submitted} · **来源**：ArXiv",
             "",
@@ -178,5 +181,7 @@ class ReportWriter:
         return f"""<article><div class="rank">{paper.pick_rank}</div><div class="content">
         <h2><a href="{html.escape(paper.url)}">{html.escape(paper.title)}</a>
         <small>相关 {paper.relevance_score}/10 · 创新 {paper.innovation_score}/10</small></h2>
-        <p>{html.escape(paper.summary)}</p><div class="meta">{html.escape(authors)} · ArXiv · 综合分 {paper.combined_score:.1f}/10</div>
+        <p><strong>研究动机：</strong>{html.escape(paper.research_motivation)}</p>
+        <p><strong>核心贡献：</strong>{html.escape(paper.core_contributions)}</p>
+        <div class="meta">{html.escape(authors)} · ArXiv · 综合分 {paper.combined_score:.1f}</div>
         </div></article>"""

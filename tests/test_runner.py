@@ -71,7 +71,8 @@ def test_academic_only_skips_all_github_work_and_history(tmp_path, monkeypatch) 
         source_id="2607.00001",
         title="Academic-only test",
         url="https://arxiv.org/abs/2607.00001",
-        summary="测试论文",
+        research_motivation="测试动机",
+        core_contributions="测试贡献",
         pick_rank=1,
     )
     monkeypatch.setattr(

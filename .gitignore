@@ -5,6 +5,7 @@ __pycache__/
 .ruff_cache/
 .venv/
 venv/
+uv.lock
 .env
 .DS_Store
 dist/

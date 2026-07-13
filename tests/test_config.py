@@ -35,6 +35,8 @@ def test_academic_source_config(tmp_path) -> None:
 
     assert config.academic.enabled is True
     assert config.academic.base_url == "https://www.dmxapi.cn/v1"
+    assert config.academic.model == "bigmodel/GLM-5"
+    assert config.academic.verify_ssl is True
     assert config.academic.api_key == ""
     assert config.academic.arxiv.final_picks == 4
     assert config.academic.arxiv.candidate_limit == 500

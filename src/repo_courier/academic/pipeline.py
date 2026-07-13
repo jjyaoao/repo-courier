@@ -69,7 +69,9 @@ class AcademicPipeline:
             self.source.enrich_introduction(paper)
             self.analyzer.analyze(paper, profile)
             paper.combined_score = round(
-                0.7 * paper.relevance_score + 0.3 * paper.innovation_score, 2
+                0.4 * paper.rule_score
+                + 0.6 * (paper.relevance_score + paper.innovation_score),
+                2,
             )
 
         with ThreadPoolExecutor(max_workers=workers) as executor:

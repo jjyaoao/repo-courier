@@ -1,10 +1,15 @@
+import json
+import logging
 from datetime import date, datetime, timezone
 
 from repo_courier.academic.analyzer import PaperAnalyzer
 from repo_courier.academic.arxiv import ArxivSource, build_query, extract_introduction, parse_feed
 from repo_courier.academic.base import SearchWindow
 from repo_courier.academic.pipeline import AcademicPipeline, analysis_worker_count, rule_score
-from repo_courier.academic.prompts import PAPER_ANALYSIS_SYSTEM_PROMPT
+from repo_courier.academic.prompts import (
+    PAPER_ANALYSIS_SYSTEM_PROMPT,
+    paper_analysis_user_prompt,
+)
 from repo_courier.config import AcademicConfig, ArxivConfig, ProfileConfig, SummaryConfig
 from repo_courier.models import AcademicPaper
 
@@ -118,7 +123,8 @@ def test_pipeline_shortlists_twice_final_picks_and_combines_scores() -> None:
             self.analyzed.append(paper.source_id)
             paper.relevance_score = int(paper.source_id)
             paper.innovation_score = 10
-            paper.summary = "summary"
+            paper.research_motivation = "研究动机"
+            paper.core_contributions = "核心贡献"
             paper.analysis_status = "ai"
 
     analyzer = Analyzer()
@@ -136,7 +142,7 @@ def test_pipeline_shortlists_twice_final_picks_and_combines_scores() -> None:
 
     assert len(analyzer.analyzed) == 4
     assert len(result.papers) == 2
-    assert result.papers[0].combined_score == 5.1
+    assert result.papers[0].combined_score == 9.4
 
 
 def test_analysis_workers_are_dynamic_and_capped() -> None:
@@ -155,7 +161,8 @@ def test_llm_fallback_uses_rule_score_and_abstract() -> None:
 
     assert paper.relevance_score == 10
     assert paper.innovation_score == 0
-    assert paper.summary == "A useful abstract"
+    assert "LLM 分析失败" in paper.research_motivation
+    assert "A useful abstract" in paper.core_contributions
     assert paper.analysis_status == "fallback"
 
 
@@ -171,7 +178,8 @@ def test_prompt_has_explicit_json_example_and_repairs_llm_json() -> None:
                         "message": {
                             "content": (
                                 "```json\n{'relevance_score': 9, 'innovation_score': 8, "
-                                "'summary': '相关论文',}\n```"
+                                "'research_motivation': '现有方法可靠性不足', "
+                                "'core_contributions': '提出新的智能体协作方法',}\n```"
                             )
                         }
                     }
@@ -192,20 +200,180 @@ def test_prompt_has_explicit_json_example_and_repairs_llm_json() -> None:
     analyzer.analyze(paper, ProfileConfig(interests=["agent"]))
 
     assert '"relevance_score": 9' in PAPER_ANALYSIS_SYSTEM_PROMPT
-    assert "与用户关键词相关的方法与创新点" in PAPER_ANALYSIS_SYSTEM_PROMPT
-    assert "不得超过 200 个字符" in PAPER_ANALYSIS_SYSTEM_PROMPT
+    assert "keywords 与 paper_content" in PAPER_ANALYSIS_SYSTEM_PROMPT
+    assert "分别不超过 200 字" in PAPER_ANALYSIS_SYSTEM_PROMPT
     assert paper.relevance_score == 9
     assert paper.innovation_score == 8
-    assert paper.summary == "相关论文"
+    assert paper.research_motivation == "现有方法可靠性不足"
+    assert paper.core_contributions == "提出新的智能体协作方法"
     assert paper.analysis_status == "ai"
 
 
-def test_analyzer_limits_ai_and_fallback_summaries_to_200_characters() -> None:
+def test_llm_raw_response_is_logged(caplog) -> None:
+    class Response:
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": (
+                                '{"relevance_score": 9, "innovation_score": 8, '
+                                '"research_motivation": "需要提升可靠性", '
+                                '"core_contributions": "提出新的协作方法"}'
+                            )
+                        }
+                    }
+                ]
+            }
+
+    class Client:
+        def post(self, *args, **kwargs):
+            return Response()
+
+    paper = _paper("logged-paper", "Agent", "Abstract")
+    analyzer = PaperAnalyzer(
+        AcademicConfig(api_key="secret"),
+        SummaryConfig(model="model"),
+        client=Client(),
+    )
+
+    with caplog.at_level(logging.INFO, logger="repo_courier.academic.analyzer"):
+        analyzer.analyze(paper, ProfileConfig(interests=["agent"]))
+
+    assert "logged-paper HTTP 200 响应体" in caplog.text
+    assert '"innovation_score": 8' in caplog.text
+
+
+def test_llm_response_without_choices_logs_body_and_explains_shape(caplog) -> None:
+    class Response:
+        status_code = 200
+        text = '{"code":"InvalidParameter","message":"model is unavailable"}'
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "code": "InvalidParameter",
+                "message": "model is unavailable",
+            }
+
+    class Client:
+        def post(self, *args, **kwargs):
+            return Response()
+
+    paper = _paper("invalid-response", "Agent", "Abstract")
+    analyzer = PaperAnalyzer(
+        AcademicConfig(api_key="secret"),
+        SummaryConfig(model="model"),
+        client=Client(),
+    )
+
+    with caplog.at_level(logging.INFO, logger="repo_courier.academic.analyzer"):
+        analyzer.analyze(paper, ProfileConfig(interests=["agent"]))
+
+    assert 'invalid-response HTTP 200 响应体：{"code":"InvalidParameter"' in caplog.text
+    assert "缺少非空 choices，顶层字段：code, message" in caplog.text
+    assert paper.analysis_status == "fallback"
+
+
+def test_academic_model_is_sent_independently_from_summary_model() -> None:
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": (
+                                '{"relevance_score": 9, "innovation_score": 8, '
+                                '"research_motivation": "需要提升可靠性", '
+                                '"core_contributions": "提出新的协作方法"}'
+                            )
+                        }
+                    }
+                ]
+            }
+
+    class Client:
+        request_url = None
+        request_json = None
+
+        def post(self, *args, **kwargs):
+            self.request_url = args[0]
+            self.request_json = kwargs["json"]
+            return Response()
+
+    client = Client()
+    analyzer = PaperAnalyzer(
+        AcademicConfig(
+            api_key="secret",
+            base_url="https://idealab.alibaba-inc.com/api/v1/chat/completions",
+            model="bigmodel/GLM-5",
+        ),
+        SummaryConfig(model="github-summary-model"),
+        client=client,
+    )
+
+    analyzer.analyze(_paper("model-paper", "Agent", "Abstract"), ProfileConfig())
+
+    assert client.request_url == "https://idealab.alibaba-inc.com/api/v1/chat/completions"
+    assert client.request_json["model"] == "bigmodel/GLM-5"
+
+
+def test_fallback_fields_are_each_limited_to_200_characters() -> None:
     paper = _paper("1", "Agent", "摘" * 300)
 
     PaperAnalyzer(AcademicConfig(), SummaryConfig(enabled=False)).analyze(
         paper, ProfileConfig()
     )
 
-    assert len(paper.summary) == 200
-    assert paper.summary.endswith("…")
+    assert len(paper.research_motivation) <= 200
+    assert len(paper.core_contributions) == 200
+    assert paper.core_contributions.endswith("…")
+
+
+def test_non_object_llm_json_falls_back_instead_of_crashing() -> None:
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"choices": [{"message": {"content": "[]"}}]}
+
+    class Client:
+        def post(self, *args, **kwargs):
+            return Response()
+
+    paper = _paper("1", "Agent", "Abstract")
+    analyzer = PaperAnalyzer(
+        AcademicConfig(api_key="secret"),
+        SummaryConfig(model="model"),
+        client=Client(),
+    )
+
+    analyzer.analyze(paper, ProfileConfig(interests=["agent"]))
+
+    assert paper.analysis_status == "fallback"
+
+
+def test_llm_input_uses_title_abstract_and_optional_introduction() -> None:
+    paper = _paper("1", "Paper title", "Paper abstract")
+    without_intro = json.loads(
+        paper_analysis_user_prompt(paper, ProfileConfig(interests=["agent"]))
+    )["paper_content"]
+    assert without_intro == "Title:\nPaper title\n\nAbstract:\nPaper abstract"
+    assert "Introduction:" not in without_intro
+
+    paper.introduction = "Paper introduction"
+    with_intro = json.loads(
+        paper_analysis_user_prompt(paper, ProfileConfig(interests=["agent"]))
+    )["paper_content"]
+    assert with_intro.endswith("Introduction:\nPaper introduction")

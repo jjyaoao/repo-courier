@@ -75,7 +75,8 @@ class AcademicPaper:
     rule_score: int = 0
     relevance_score: int = 0
     innovation_score: int = 0
-    summary: str = ""
+    research_motivation: str = ""
+    core_contributions: str = ""
     combined_score: float = 0.0
     analysis_status: str = "pending"
     pick_rank: int | None = None

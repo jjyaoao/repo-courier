@@ -36,7 +36,17 @@ profile:
 academic:
   enabled: true
   # Academic 密钥只通过 export academic_api_key="..." 导入
-  base_url: https://www.dmxapi.cn/v1
+  # 填写完整的 Chat Completions 接口地址，代码不会再追加路径。
+
+  ## alibaba api base
+  # base_url: https://idealab.alibaba-inc.com/api/v1/chat/completions
+  # model: bigmodel/GLM-5
+
+  ## dmx api base
+  base_url: https://www.dmxapi.cn/v1/chat/completions
+  model: glm-5
+  # 当前接口证书链包含自签名证书；测试时关闭校验。生产环境建议配置可信 CA 后改为 true。
+  verify_ssl: false
   sources:
     arxiv:
       enabled: true

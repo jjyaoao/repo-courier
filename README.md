@@ -1,4 +1,4 @@
-# 📮 RepoCourier
+📮 RepoCourier
 
 > 每天从 GitHub Trending 和学术数据库中，挑出真正与你有关的项目与论文。
 
@@ -43,7 +43,7 @@ source .venv/bin/activate
 pip install .
 ```
 
-### 1. 写下关注词
+### 1. 写下关注词并配置模型参数
 
 编辑 [`config/config.yaml`](config/config.yaml)：
 
@@ -52,12 +52,23 @@ profile:
   interests: [agent, llm, mcp, developer tools, automation, self-hosted]
   exclude_keywords: [awesome list, interview, tutorial collection]
   daily_picks: 3
+
+academic:
+  enabled: true
+  base_url: https://www.example.cn/v1/chat/completions
+  model: glm-5
 ```
 
 推荐使用 GitHub 仓库描述和 Topics 中常见的英文关键词。也可以临时通过环境变量覆盖：
 
 ```bash
 export REPO_COURIER_INTERESTS="rust,cli,database,self-hosted"
+```
+
+添加用于Academic文献检索的api key：
+
+```Shell
+export academic_api_key="sk-xxxxxxxxxxxxxxxx"
 ```
 
 ### 2. 先看一次结果
@@ -80,12 +91,12 @@ reports/YYYY-MM-DD/daily.json
 
 敏感信息全部通过环境变量配置：
 
-| 渠道 | 环境变量 |
-| --- | --- |
-| 飞书机器人 | `FEISHU_WEBHOOK` |
-| 企业微信群机器人 | `WECOM_WEBHOOK` |
-| 个人微信 Server酱 | `SERVERCHAN_SENDKEY` |
-| 个人 QQ OneBot | `ONEBOT_URL`、`ONEBOT_USER_ID`，可选 `ONEBOT_TOKEN` |
+| 渠道              | 环境变量                                                  |
+| ----------------- | --------------------------------------------------------- |
+| 飞书机器人        | `FEISHU_WEBHOOK`                                        |
+| 企业微信群机器人  | `WECOM_WEBHOOK`                                         |
+| 个人微信 Server酱 | `SERVERCHAN_SENDKEY`                                    |
+| 个人 QQ OneBot    | `ONEBOT_URL`、`ONEBOT_USER_ID`，可选 `ONEBOT_TOKEN` |
 
 例如：
 
