@@ -1,16 +1,21 @@
 {
   "date": "2026-07-12",
+  "academic_window": {
+    "timezone": "Asia/Shanghai",
+    "start": "2026-07-12T00:00:00+08:00",
+    "end": "2026-07-12T23:59:59+08:00"
+  },
   "repositories": [
     {
-      "rank": 8,
+      "rank": 2,
       "owner": "wonderwhy-er",
       "name": "DesktopCommanderMCP",
       "url": "https://github.com/wonderwhy-er/DesktopCommanderMCP",
       "description": "This is MCP server for Claude that gives it terminal control, file system search and diff file editing capabilities",
       "language": "TypeScript",
-      "stars": 7806,
-      "forks": 972,
-      "stars_today": 909,
+      "stars": 8035,
+      "forks": 991,
+      "stars_today": 210,
       "topics": [
         "agent",
         "ai",
@@ -24,12 +29,12 @@
       ],
       "license": "MIT",
       "homepage": "https://desktopcommander.app/",
-      "open_issues": 176,
-      "updated_at": "2026-07-12T04:15:22Z",
+      "open_issues": 177,
+      "updated_at": "2026-07-13T04:23:23Z",
       "readme_excerpt": "# Desktop Commander MCP\n### Search, update, manage files and run terminal commands with AI\n\n[![npm downloads](https://img.shields.io/npm/dw/@wonderwhy-er/desktop-commander)](https://www.npmjs.com/package/@wonderwhy-er/desktop-commander)\n[![AgentAudit Verified](https://agentaudit.dev/api/badge/desktop-commander)](https://agentaudit.dev/skills/desktop-commander)\n[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/wonderwhy-er/DesktopCommanderMCP)](https://archestra.ai/mcp-catalog/wonderwhy-er__desktopcommandermcp)\n[![smithery badge](https://smithery.ai/badge/@wonderwhy-er/desktop-commander)](https://smithery.ai/server/@wonderwhy-er/desktop-commander)\n[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow.svg)](https://www.buymeacoffee.com/wonderwhyer)\n\n\n[![Discord](https://img.shields.io/badge/Join%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/kQ27sNnZr7)\n\n\nWork with code and text, run processes, and automate tasks, going far beyond other AI editors - while using host client subscriptions instead of API token costs.\n\n<a href=\"https://glama.ai/mcp/servers/zempur9oh4\">\n  <img width=\"380\" height=\"200\" src=\"https://glama.ai/mcp/servers/zempur9oh4/badge\" alt=\"Desktop Commander MCP\" />\n</a>\n\n## 🖥️ Try the Desktop Commander App (Beta)\n\n**Want a better experience?** The Desktop Commander App gives you everything the MCP server does, plus:\n\n- **Use any AI model** — Claude, GPT-4.5, Gemini 2.5, or any model you prefer\n- **See file changes live** — visual file previews as AI edits your files\n- **Add custom MCPs and context** — extend with your own tools, no config files\n- **Coming soon** — skills system, dictation, background scheduled tasks, and more\n\n**👉 [Download the App](https://desktopcommander.app/#download)** (macOS & Windows)\n\n> The MCP server below still works great with Claude Desktop and other MCP clients — the app is for those who want a dedicated, polished experience.\n\n## Table of Contents\n- [Features](#features)\n- [How to install](#how-to-install)\n- [Getting Started](#getting-started)\n- [Usage](#usage)\n- [File Preview UI & Markdown Editor](#file-preview-ui--markdown-editor)\n- [Handling Long-Running Commands](#handling-long-running-commands)\n- [Work in Progress and TODOs](#roadmap)\n- [Sponsors and Supporters](#support-desktop-commander)\n- [Website](#website)\n- [Media](#media)\n- [Testimonials](#testimonials)\n- [Frequently Asked Questions](#frequently-asked-questions)\n- [Contributing](#contributing)\n- [License](#license)\n\nAll of your AI development tools in one place.\nDesktop Commander puts all dev tools in one chat.\nExecute long-running terminal commands on your computer and manage processes through Model Context Protocol (MCP). Built on top of [MCP Filesystem Server](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) to provide additional search and replace file editing capabilities.\n\n## Features\n\n- **Remote AI Control** - Use Desktop Commander from ChatGPT, Claude web, and other AI services via [Remote MCP](https://mcp.desktopcommander.app)\n- **File Preview UI** - Visual file previews in Claude Desktop with rendered markdown, inline images, expandable content, built-in markdown editor, and quick \"Open in folder\" access\n- **Enhanced terminal commands with interactive process control**\n- **Execute code in memory (Python, Node.js, R) without saving files**\n- **Instant data analysis - just ask to analyze CSV/JSON/Excel files**\n- **Native Excel file support** - Read, write, edit, and search Excel files (.xlsx, .xls, .xlsm) without external tools\n- **PDF support** - Read PDFs with text extraction, create new PDFs from markdown, modify existing PDFs\n- **DOCX support** - Read, create, edit, and search Word documents (.docx) with surgical XML editing and markdown-to-DOCX conversion\n- **Interact with running processes (SSH, databases, development servers)**\n- Execute terminal commands with output streaming\n- Command timeout and",
       "summary": "This is MCP server for Claude that gives it terminal control, file system search and diff file editing capabilities",
       "highlights": [
-        "今日新增约 909 Stars",
+        "今日新增约 210 Stars",
         "主要语言：TypeScript",
         "关键词：agent、ai、code-analysis、code-generation"
       ],
@@ -40,7 +45,7 @@
       "risk_note": "",
       "relevance_score": 100,
       "recommendation": "深挖",
-      "why_for_you": "命中你的关注词：agent、mcp、automation；今日新增约 909 Stars。",
+      "why_for_you": "命中你的关注词：agent、mcp、automation；今日新增约 210 Stars。",
       "matched_interests": [
         "agent",
         "mcp",
@@ -50,94 +55,108 @@
       "previous_rank": 1,
       "is_new": false,
       "full_name": "wonderwhy-er/DesktopCommanderMCP",
-      "rank_change": "↓7"
+      "rank_change": "↓1"
     },
     {
-      "rank": 4,
-      "owner": "google-labs-code",
-      "name": "stitch-skills",
-      "url": "https://github.com/google-labs-code/stitch-skills",
-      "description": "A library of Agent Skills designed to work with the Stitch MCP server. Each skill follows the Agent Skills open standard, for compatibility with coding agents such as Antigravity, Gemini CLI, Claude Code, Cursor.",
-      "language": "TypeScript",
-      "stars": 7115,
-      "forks": 947,
-      "stars_today": 340,
-      "topics": [],
-      "license": "Apache-2.0",
-      "homepage": "https://stitch.withgoogle.com/docs/mcp/setup",
-      "open_issues": 21,
-      "updated_at": "2026-07-12T04:11:46Z",
-      "readme_excerpt": "# Stitch Design Skills\n\nA collection of agent skills and plugins for [Google Stitch](https://stitch.withgoogle.com), following the [Agent Skills](https://agentskills.io) open standard. Compatible with coding agents such as Codex, Antigravity, Gemini CLI, Claude Code, and Cursor.\n\n## Quick Start\n\n### 1. Install Plugins (Recommended)\nThe fastest way to set up the full Stitch plugin suite globally.\n\n#### Codex\n\nAdd the Stitch Skills marketplace, then install the plugins you need.\n\n<details open>\n<summary><strong>Via CLI</strong> (recommended)</summary>\n\n```bash\ncodex plugin marketplace add google-labs-code/stitch-skills --ref main \\\n  --sparse .agents/plugins \\\n  --sparse plugins/stitch-design \\\n  --sparse plugins/stitch-build \\\n  --sparse plugins/stitch-utilities\n```\n\n> [!TIP]\n> The `--sparse` flags are optional — they limit the checkout to only the\n> listed paths for a faster clone. Omit them to pull the entire repository.\n\n</details>\n\n<details>\n<summary><strong>Via the Codex UI</strong></summary>\n\nNavigate to **Settings → Plugin Marketplaces → Add** and fill in:\n\n| Field | Value |\n|---|---|\n| **Source** | `https://github.com/google-labs-code/stitch-skills` |\n| **Git ref** | `main` |\n| **Sparse paths** | *(optional)* `.agents/plugins`, `plugins/stitch-design`, `plugins/stitch-build`, `plugins/stitch-utilities` |\n\n</details>\n\nOnce the marketplace is registered, install any combination of:\n\n- **`stitch-design`** — design-focused skills\n- **`stitch-build`** — build and component skills\n- **`stitch-utilities`** — utility and helper skills\n\n#### Claude Code & Cursor\n\n```bash\n# Claude Code — installs into the current project\nnpx plugins add google-labs-code/stitch-skills --scope project --target claude-code\n```\n\n```bash\n# Cursor — installs into the current workspace\nnpx plugins add google-labs-code/stitch-skills --scope workspace --target cursor\n```\n\n### 2. Install Skills Selectively\nChoose only the specific skills you need.\n\n> [!IMPORTANT]\n> Stitch Design Skills often have inter-dependencies. If you choose to install skills selectively, ensure you include all required dependencies.\n\n```bash\nnpx skills add google-labs-code/stitch-skills\n```\n\nYou can run the following commands to see the help documentation for plugins and skills:\n\n```bash\nnpx plugins --help\n\nnpx skills --help\n```\n\n## Prerequisites\n\nThese skills require the **Stitch MCP** server to be configured and running in your agent's environment. Make sure you have followed the [Stitch MCP Setup Instructions](https://stitch.withgoogle.com/docs/mcp/setup/) to register the server and set up appropriate environment variables and credentials.\n\n## Available Plugins\n\n### Design (`stitch-design`)\n\nCore design workflows for creating, managing, and optimizing designs within Stitch.\n\n| Skill | Description | Prompt Example |\n|---|---|---|\n| [stitch::code-to-design](plugins/stitch-design/skills/code-to-design/) | Convert frontend code (React, Vue, etc.) to a Stitch Design via HTML extraction + design system + upload | *\"Upload the frontend code at `/path/to/dashboard` into a Stitch project named 'Dashboard-Migration-2026'.\"* |\n| [stitch::generate-design](plugins/stitch-design/skills/generate-design/) | Generate new screens from text or images, edit existing screens, and create design variants | · *\"Make a browse tab for a mobile app for romance and date night ideas.\"*<br>· *\"Edit the login screen to add a 'Remember Me' checkbox and change the button color to blue.\"*<br>· *\"Generate 3 design variants of the home screen with dark mode and high-density layouts.\"* |\n| [stitch::manage-design-system](plugins/stitch-design/skills/manage-design-system/) | Manage design systems in Stitch — upload DESIGN.md and apply themes to screens | *\"Upload our design system from `.stitch/DESIGN.md` and apply it to all screens.\"* |\n| [stitch::extract-design-md](plugins/stitch-design/skills/extract-design-md/) | Extract a comprehensive DESIGN.md directly from frontend source code | *\"Scan `/src` and extract the de",
-      "summary": "A library of Agent Skills designed to work with the Stitch MCP server. Each skill follows the Agent Skills open standard, for compatibility with coding agents such as Antigravity, Gemini CLI, Claude Code, Cursor",
+      "rank": 3,
+      "owner": "HKUDS",
+      "name": "Vibe-Trading",
+      "url": "https://github.com/HKUDS/Vibe-Trading",
+      "description": "\"Vibe-Trading: Your Personal Trading Agent\"",
+      "language": "Python",
+      "stars": 20756,
+      "forks": 3620,
+      "stars_today": 768,
+      "topics": [
+        "ai-agent",
+        "algorithmic-trading",
+        "backtesting",
+        "fintech",
+        "llm",
+        "mcp",
+        "multi-agent",
+        "python",
+        "quantitative-finance",
+        "trading"
+      ],
+      "license": "MIT",
+      "homepage": "https://vibetrading.wiki/",
+      "open_issues": 10,
+      "updated_at": "2026-07-13T04:24:28Z",
+      "readme_excerpt": "<p align=\"center\">\n  <b>English</b> | <a href=\"README_zh.md\">中文</a> | <a href=\"README_ja.md\">日本語</a> | <a href=\"README_ko.md\">한국어</a> | <a href=\"README_ar.md\">العربية</a>\n</p>\n\n<p align=\"center\">\n  <img src=\"assets/icon.png\" width=\"120\" alt=\"Vibe-Trading Logo\"/>\n</p>\n\n<h1 align=\"center\">Vibe-Trading: Your Personal Trading Agent</h1>\n\n<p align=\"center\">\n  <b>One Command to Empower Your Agent with Comprehensive Trading Capabilities</b>\n</p>\n\n<p align=\"center\">\n  <a href=\"https://trendshift.io/repositories/25527\" target=\"_blank\"><img src=\"https://trendshift.io/api/badge/repositories/25527\" alt=\"HKUDS%2FVibe-Trading | Trendshift\" style=\"width: 250px; height: 55px;\" width=\"250\" height=\"55\"/></a>\n</p>\n\n<p align=\"center\">\n  <img src=\"https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat&logo=python&logoColor=white\" alt=\"Python\">\n  <img src=\"https://img.shields.io/badge/Backend-FastAPI-009688?style=flat\" alt=\"FastAPI\">\n  <img src=\"https://img.shields.io/badge/Frontend-React%2019-61DAFB?style=flat&logo=react&logoColor=white\" alt=\"React\">\n  <a href=\"https://pypi.org/project/vibe-trading-ai/\"><img src=\"https://img.shields.io/pypi/v/vibe-trading-ai?style=flat&logo=pypi&logoColor=white\" alt=\"PyPI\"></a>\n  <a href=\"LICENSE\"><img src=\"https://img.shields.io/badge/License-MIT-yellow?style=flat\" alt=\"License\"></a>\n  <br>\n  <a href=\"https://github.com/HKUDS/.github/blob/main/profile/README.md\"><img src=\"https://img.shields.io/badge/Feishu-Group-E9DBFC?style=flat-square&logo=feishu&logoColor=white\" alt=\"Feishu\"></a>\n  <a href=\"https://github.com/HKUDS/.github/blob/main/profile/README.md\"><img src=\"https://img.shields.io/badge/WeChat-Group-C5EAB4?style=flat-square&logo=wechat&logoColor=white\" alt=\"WeChat\"></a>\n  <a href=\"https://discord.gg/6TdQnT5xcF\"><img src=\"https://img.shields.io/badge/Discord-Join-7289DA?style=flat-square&logo=discord&logoColor=white\" alt=\"Discord\"></a>\n</p>\n\n<p align=\"center\">\n  <a href=\"https://vibetrading.wiki/\">Website</a> &nbsp;&middot;&nbsp;\n  <a href=\"https://vibetrading.wiki/docs/\">Docs</a> &nbsp;&middot;&nbsp;\n  <a href=\"#-news\">News</a> &nbsp;&middot;&nbsp;\n  <a href=\"#-key-features\">Features</a> &nbsp;&middot;&nbsp;\n  <a href=\"#-shadow-account\">Shadow Account</a> &nbsp;&middot;&nbsp;\n  <a href=\"#-demo\">Demo</a> &nbsp;&middot;&nbsp;\n  <a href=\"#-quick-start\">Quick Start</a> &nbsp;&middot;&nbsp;\n  <a href=\"#-examples\">Examples</a> &nbsp;&middot;&nbsp;\n  <a href=\"#-api-server\">API / MCP</a> &nbsp;&middot;&nbsp;\n  <a href=\"#-roadmap\">Roadmap</a> &nbsp;&middot;&nbsp;\n  <a href=\"#-contributing\">Contributing</a>\n</p>\n\n<p align=\"center\">\n  <a href=\"#-quick-start\"><img src=\"assets/pip-install.svg\" height=\"45\" alt=\"pip install vibe-trading-ai\"></a>\n</p>\n\n---\n\n## 📰 News\n\n> ⚠️ **Security warning:** The X account `VibeTrading_HKU`, Virtuals project `101845`, and token contract `0x640BDBF77b6447E8b7DB7894cED84BD1c40571f4` are not official Vibe-Trading assets. We have never launched or endorsed any token or memecoin. Do not buy, connect a wallet, or sign anything. [Details](SECURITY.md#official-channels--impersonation).\n\n- **2026-07-12** 🧪 **Strategy Development Manager + contributor fix batch**: the new `strategy-dev-manager` skill (#87) turns academic papers and broker research into registered factors/strategies with a persistent artifact store and automated IC/Sharpe decay monitoring — `sdm_register` / `sdm_status` / `sdm_decay_scan` drive an active → monitoring → decayed → disabled lifecycle over `~/.vibe-trading/` ([#457](https://github.com/HKUDS/Vibe-Trading/pull/457), closes [#455](https://github.com/HKUDS/Vibe-Trading/issues/455), thanks @shadowinlife). Also merged: the Correlation tab accepts bare tickers (`AAPL,SPY`) and walks the full loader fallback chain ([#472](https://github.com/HKUDS/Vibe-Trading/pull/472), closes [#471](https://github.com/HKUDS/Vibe-Trading/issues/471), thanks @yxhuang), the `local` loader honors requested intervals via OHLCV resampling ([#467](https://github.com/HKUDS/Vibe-Trading/pull/4",
+      "summary": "\"Vibe-Trading: Your Personal Trading Agent\"",
       "highlights": [
-        "今日新增约 340 Stars",
-        "主要语言：TypeScript"
+        "今日新增约 768 Stars",
+        "主要语言：Python",
+        "关键词：ai-agent、algorithmic-trading、backtesting、fintech"
       ],
       "use_cases": [
         "AI 原型验证与能力集成"
       ],
       "category": "AI / 机器学习",
       "risk_note": "",
-      "relevance_score": 53,
+      "relevance_score": 100,
       "recommendation": "深挖",
-      "why_for_you": "命中你的关注词：agent、mcp；今日新增约 340 Stars。",
+      "why_for_you": "命中你的关注词：agent、llm、mcp；今日新增约 768 Stars。",
       "matched_interests": [
         "agent",
+        "llm",
         "mcp"
       ],
       "pick_rank": 2,
-      "previous_rank": 15,
-      "is_new": false,
-      "full_name": "google-labs-code/stitch-skills",
-      "rank_change": "↑11"
+      "previous_rank": null,
+      "is_new": true,
+      "full_name": "HKUDS/Vibe-Trading",
+      "rank_change": "NEW"
     },
     {
-      "rank": 12,
-      "owner": "home-assistant",
-      "name": "core",
-      "url": "https://github.com/home-assistant/core",
-      "description": ":house_with_garden: Open source home automation that puts local control and privacy first.",
+      "rank": 5,
+      "owner": "Shubhamsaboo",
+      "name": "awesome-llm-apps",
+      "url": "https://github.com/Shubhamsaboo/awesome-llm-apps",
+      "description": "100+ AI Agent & RAG apps you can actually run — clone, customize, ship.",
       "language": "Python",
-      "stars": 88739,
-      "forks": 38051,
-      "stars_today": 80,
+      "stars": 118764,
+      "forks": 17653,
+      "stars_today": 408,
       "topics": [
-        "asyncio",
-        "hacktoberfest",
-        "home-automation",
-        "internet-of-things",
-        "iot",
-        "mqtt",
+        "agents",
+        "llms",
         "python",
-        "raspberry-pi"
+        "rag"
       ],
       "license": "Apache-2.0",
-      "homepage": "https://www.home-assistant.io",
-      "open_issues": 3340,
-      "updated_at": "2026-07-12T04:16:42Z",
-      "readme_excerpt": "Home Assistant |Chat Status|\n=================================================================================\n\nOpen source home automation that puts local control and privacy first. Powered by a worldwide community of tinkerers and DIY enthusiasts. Perfect to run on a Raspberry Pi or a local server.\n\nCheck out `home-assistant.io <https://home-assistant.io>`__ for `a\ndemo <https://demo.home-assistant.io>`__, `installation instructions <https://home-assistant.io/getting-started/>`__,\n`tutorials <https://home-assistant.io/getting-started/automation/>`__ and `documentation <https://home-assistant.io/docs/>`__.\n\n|screenshot-states|\n\nFeatured integrations\n---------------------\n\n|screenshot-integrations|\n\nThe system is built using a modular approach so support for other devices or actions can be implemented easily. See also the `section on architecture <https://developers.home-assistant.io/docs/architecture_index/>`__ and the `section on creating your own\ncomponents <https://developers.home-assistant.io/docs/creating_component_index/>`__.\n\nIf you run into issues while using Home Assistant or during development\nof a component, check the `Home Assistant help section <https://home-assistant.io/help/>`__ of our website for further help and information.\n\n|ohf-logo|\n\n.. |Chat Status| image:: https://img.shields.io/discord/330944238910963714.svg\n   :target: https://www.home-assistant.io/join-chat/\n.. |screenshot-states| image:: https://raw.githubusercontent.com/home-assistant/core/dev/.github/assets/screenshot-states.png\n   :target: https://demo.home-assistant.io\n.. |screenshot-integrations| image:: https://raw.githubusercontent.com/home-assistant/core/dev/.github/assets/screenshot-integrations.png\n   :target: https://home-assistant.io/integrations/\n.. |ohf-logo| image:: https://www.openhomefoundation.org/badges/home-assistant.png\n   :alt: Home Assistant - A project from the Open Home Foundation\n   :target: https://www.openhomefoundation.org/\n",
-      "summary": ":house_with_garden: Open source home automation that puts local control and privacy first",
+      "homepage": "https://www.theunwindai.com",
+      "open_issues": 9,
+      "updated_at": "2026-07-13T04:23:44Z",
+      "readme_excerpt": "<p align=\"center\">\n  <a href=\"http://www.theunwindai.com\">\n    <img src=\"docs/banner/unwind_black.png\" width=\"900px\" alt=\"Unwind AI\">\n  </a>\n</p>\n\n<p align=\"center\">\n  <a href=\"https://www.linkedin.com/in/shubhamsaboo/\">\n    <img src=\"https://img.shields.io/badge/Follow%20on%20LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white\" alt=\"LinkedIn\">\n  </a>\n  <a href=\"https://twitter.com/Saboo_Shubham_\">\n    <img src=\"https://img.shields.io/badge/Follow%20on%20𝕏-000000?style=for-the-badge&logo=x&logoColor=white\" alt=\"X / Twitter\">\n  </a>\n</p>\n\n<p align=\"center\">\n  <!-- Keep these links. Translations will automatically update with the README. -->\n  <a href=\"https://www.readme-i18n.com/Shubhamsaboo/awesome-llm-apps?lang=de\">Deutsch</a> | \n  <a href=\"https://www.readme-i18n.com/Shubhamsaboo/awesome-llm-apps?lang=es\">Español</a> | \n  <a href=\"https://www.readme-i18n.com/Shubhamsaboo/awesome-llm-apps?lang=fr\">français</a> | \n  <a href=\"https://www.readme-i18n.com/Shubhamsaboo/awesome-llm-apps?lang=ja\">日本語</a> | \n  <a href=\"https://www.readme-i18n.com/Shubhamsaboo/awesome-llm-apps?lang=ko\">한국어</a> | \n  <a href=\"https://www.readme-i18n.com/Shubhamsaboo/awesome-llm-apps?lang=pt\">Português</a> | \n  <a href=\"https://www.readme-i18n.com/Shubhamsaboo/awesome-llm-apps?lang=ru\">Русский</a> | \n  <a href=\"https://www.readme-i18n.com/Shubhamsaboo/awesome-llm-apps?lang=zh\">中文</a>\n</p>\n\n<hr/>\n\n<div align=\"center\">\n\n# 🌟 Awesome LLM Apps\n\n<p><strong>100+ AI Agent & RAG apps you can actually run — clone, customize, ship.</strong><br/>\nAI Agents · Always-on Agents · Multi-agent Teams · MCP Agents · RAG · Voice Agents · Agent Skills · Fine-tuning</p>\n\n<p>\n<strong>Free step-by-step tutorials on <a href=\"https://www.theunwindai.com\">Unwind AI</a></strong><br/>\n<strong>Works with Claude · Gemini · OpenAI · xAI · Qwen · Llama</strong>\n</p>\n\n<p>\n<a href=\"https://github.com/Shubhamsaboo/awesome-llm-apps/stargazers\"><img src=\"https://img.shields.io/github/stars/Shubhamsaboo/awesome-llm-apps?style=for-the-badge&logo=github&color=FFD700\" alt=\"Stars\"></a>\n<a href=\"https://github.com/Shubhamsaboo/awesome-llm-apps/network/members\"><img src=\"https://img.shields.io/github/forks/Shubhamsaboo/awesome-llm-apps?style=for-the-badge&logo=github&color=4FC3F7\" alt=\"Forks\"></a>\n<a href=\"https://github.com/Shubhamsaboo/awesome-llm-apps/graphs/contributors\"><img src=\"https://img.shields.io/github/contributors/Shubhamsaboo/awesome-llm-apps?style=for-the-badge&color=22C55E\" alt=\"Contributors\"></a>\n<a href=\"LICENSE\"><img src=\"https://img.shields.io/github/license/Shubhamsaboo/awesome-llm-apps?style=for-the-badge&color=8B5CF6\" alt=\"License\"></a>\n<img src=\"https://img.shields.io/github/last-commit/Shubhamsaboo/awesome-llm-apps?style=for-the-badge&color=F97316\" alt=\"Last Commit\">\n</p>\n\n<p>\n<a href=\"#-quick-start\"><kbd> &nbsp; 🚀 Quick Start &nbsp; </kbd></a>\n<a href=\"#-featured-ai-projects\"><kbd> &nbsp; 📂 Browse Templates &nbsp; </kbd></a>\n<a href=\"https://www.theunwindai.com\"><kbd> &nbsp; 📚 Step-by-Step Tutorials &nbsp; </kbd></a>\n</p>\n\n<a href=\"https://trendshift.io/repositories/9876\" target=\"_blank\">\n  <img src=\"https://trendshift.io/api/badge/repositories/9876\" width=\"220\" alt=\"Featured on Trendshift\">\n</a>\n\n</div>\n\n---\n\n## 💡 Why this exists\n\nYou shouldn't have to rebuild the same RAG pipeline, agent loop, or MCP integration from scratch every time you start a new LLM project.\n\n**Awesome LLM Apps is a cookbook of ready-to-run templates** - starter code you can fork, customize, and ship as a production LLM app. Every template here is self-contained with full source code, not collected from elsewhere.\n\n- 🛠️ **Hand-built, not curated** - every template is original work, tested end-to-end before it ships.\n- 🧪 **Runs in 3 commands** - no broken `requirements.txt`, no \"figure it out yourself\" scaffolding.\n- 🧠 **Covers the modern AI stack** - AI Agents, Always-on Agents, Multi-agent Teams, MCP Agents, Voice AI Agents, RAG, Agent Skills, Fine-tuning.\n- 🌐 **Provider-agnostic** -",
+      "summary": "100+ AI Agent & RAG apps you can actually run — clone, customize, ship",
       "highlights": [
-        "今日新增约 80 Stars",
+        "今日新增约 408 Stars",
         "主要语言：Python",
-        "关键词：asyncio、hacktoberfest、home-automation、internet-of-things"
+        "关键词：agents、llms、python、rag"
       ],
       "use_cases": [
-        "安全研究与防护能力建设"
+        "AI 原型验证与能力集成"
       ],
-      "category": "安全",
+      "category": "AI / 机器学习",
       "risk_note": "",
-      "relevance_score": 36,
-      "recommendation": "关注",
-      "why_for_you": "命中你的关注词：automation；今日新增约 80 Stars。",
+      "relevance_score": 64,
+      "recommendation": "深挖",
+      "why_for_you": "命中你的关注词：agent、llm；今日新增约 408 Stars。",
       "matched_interests": [
-        "automation"
+        "agent",
+        "llm"
       ],
       "pick_rank": 3,
       "previous_rank": null,
       "is_new": true,
-      "full_name": "home-assistant/core",
+      "full_name": "Shubhamsaboo/awesome-llm-apps",
       "rank_change": "NEW"
     }
-  ]
+  ],
+  "academic": {
+    "papers": [],
+    "error": null
+  }
 }
