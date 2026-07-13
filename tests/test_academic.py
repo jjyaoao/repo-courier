@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 
 from repo_courier.academic.analyzer import PaperAnalyzer
-from repo_courier.academic.arxiv import build_query, extract_introduction, parse_feed
+from repo_courier.academic.arxiv import ArxivSource, build_query, extract_introduction, parse_feed
 from repo_courier.academic.base import SearchWindow
 from repo_courier.academic.pipeline import AcademicPipeline, analysis_worker_count, rule_score
 from repo_courier.academic.prompts import PAPER_ANALYSIS_SYSTEM_PROMPT
@@ -56,6 +56,49 @@ def test_parse_feed_and_extract_introduction() -> None:
     assert papers[0].source_id == "2607.00001"
     assert papers[0].authors == ["Alice"]
     assert introduction == "First paragraph.\n\nSecond."
+
+
+def test_arxiv_fetches_pages_with_interval_before_rule_ranking() -> None:
+    calls: list[dict[str, object]] = []
+    sleeps: list[float] = []
+
+    class Response:
+        status_code = 200
+
+        def __init__(self, content: str) -> None:
+            self.text = content
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class Client:
+        def get(self, url, params):
+            calls.append(params)
+            start = int(params["start"])
+            size = min(int(params["max_results"]), 250 - start)
+            entries = "".join(
+                f"""<entry><id>http://arxiv.org/abs/2607.{index:05d}v1</id>
+                <published>2026-07-12T01:00:00Z</published><title>agent {index}</title>
+                <summary>agent abstract</summary></entry>"""
+                for index in range(start, start + size)
+            )
+            return Response(f'<feed xmlns="http://www.w3.org/2005/Atom">{entries}</feed>')
+
+    source = ArxivSource(
+        ArxivConfig(candidate_limit=250, page_size=100, request_interval_seconds=3),
+        client=Client(),
+        sleeper=sleeps.append,
+    )
+    papers = source.fetch(
+        ProfileConfig(interests=["agent"], exclude_keywords=[]),
+        SearchWindow.for_beijing_day(date(2026, 7, 12)),
+    )
+
+    assert [call["start"] for call in calls] == [0, 100, 200]
+    assert [call["max_results"] for call in calls] == [100, 100, 50]
+    assert sleeps == [3, 3]
+    assert len(papers) == 250
+    assert papers[0].source_id == "2607.00000"
 
 
 def test_pipeline_shortlists_twice_final_picks_and_combines_scores() -> None:

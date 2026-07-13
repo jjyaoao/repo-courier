@@ -43,7 +43,9 @@ class ProfileConfig:
 @dataclass(slots=True)
 class ArxivConfig:
     enabled: bool = True
-    candidate_limit: int = 1000
+    candidate_limit: int = 500
+    page_size: int = 100
+    request_interval_seconds: float = 3.0
     final_picks: int = 3
     introduction_max_chars: int = 12000
     max_analysis_workers: int = 50
@@ -109,12 +111,18 @@ def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
     arxiv_values = _known(ArxivConfig, _section(sources_data, "arxiv"))
     for name in (
         "candidate_limit",
+        "page_size",
         "final_picks",
         "introduction_max_chars",
         "max_analysis_workers",
     ):
         if name in arxiv_values:
             arxiv_values[name] = _positive_int(arxiv_values[name], f"academic.sources.arxiv.{name}")
+    if "request_interval_seconds" in arxiv_values:
+        arxiv_values["request_interval_seconds"] = _non_negative_float(
+            arxiv_values["request_interval_seconds"],
+            "academic.sources.arxiv.request_interval_seconds",
+        )
     arxiv = ArxivConfig(**arxiv_values)
     academic_values = _known(AcademicConfig, academic_data)
     academic_values.pop("api_key", None)
@@ -167,4 +175,16 @@ def _positive_int(value: object, name: str) -> int:
         ) from exc
     if parsed <= 0 or str(parsed) != str(value).strip():
         raise ValueError(f"配置 {name} 必须是正整数，当前值: {value!r}")
+    return parsed
+
+
+def _non_negative_float(value: object, name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"配置 {name} 必须是非负数，当前值: {value!r}")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"配置 {name} 必须是非负数，当前值: {value!r}") from exc
+    if parsed < 0:
+        raise ValueError(f"配置 {name} 必须是非负数，当前值: {value!r}")
     return parsed

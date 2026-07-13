@@ -41,7 +41,9 @@ academic:
     arxiv:
       enabled: true
       # 最多拉取的候选数；规则初筛数量固定为 final_picks 的 2 倍
-      candidate_limit: 1000
+      candidate_limit: 50
+      page_size: 10
+      request_interval_seconds: 3.0
       final_picks: 3
       introduction_max_chars: 12000
       max_analysis_workers: 50

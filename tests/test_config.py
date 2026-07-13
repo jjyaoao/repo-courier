@@ -37,6 +37,8 @@ def test_academic_source_config(tmp_path) -> None:
     assert config.academic.base_url == "https://www.dmxapi.cn/v1"
     assert config.academic.api_key == ""
     assert config.academic.arxiv.final_picks == 4
+    assert config.academic.arxiv.candidate_limit == 500
+    assert config.academic.arxiv.page_size == 100
 
 
 def test_academic_numeric_strings_are_coerced_and_expressions_are_rejected(tmp_path) -> None:

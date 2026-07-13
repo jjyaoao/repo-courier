@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 import xml.etree.ElementTree as ET
+from collections.abc import Callable
 from datetime import datetime
 
 import httpx
@@ -19,8 +21,14 @@ USER_AGENT = "RepoCourier/0.1 (academic paper discovery)"
 
 
 class ArxivSource:
-    def __init__(self, config: ArxivConfig, client: httpx.Client | None = None) -> None:
+    def __init__(
+        self,
+        config: ArxivConfig,
+        client: httpx.Client | None = None,
+        sleeper: Callable[[float], None] = time.sleep,
+    ) -> None:
         self.config = config
+        self.sleeper = sleeper
         self.client = client or httpx.Client(
             timeout=30,
             follow_redirects=True,
@@ -37,26 +45,55 @@ class ArxivSource:
             window.start.isoformat(),
             window.end.isoformat(),
         )
-        response = self.client.get(
-            "https://export.arxiv.org/api/query",
-            params={
-                "search_query": query,
-                "start": 0,
-                "max_results": max(1, self.config.candidate_limit),
-                "sortBy": "submittedDate",
-                "sortOrder": "descending",
-            },
-        )
-        response.raise_for_status()
-        papers = parse_feed(response.text)
+        papers: list[AcademicPaper] = []
+        offset = 0
+        page_number = 0
+        while offset < self.config.candidate_limit:
+            if page_number:
+                logger.info(
+                    "[Academic/ArXiv] 等待 %.1f 秒后获取下一页",
+                    self.config.request_interval_seconds,
+                )
+                self.sleeper(self.config.request_interval_seconds)
+            page_size = min(
+                self.config.page_size,
+                self.config.candidate_limit - offset,
+            )
+            page_number += 1
+            logger.info(
+                "[Academic/ArXiv] 获取第 %d 页：start=%d，max_results=%d",
+                page_number,
+                offset,
+                page_size,
+            )
+            response = self.client.get(
+                "https://export.arxiv.org/api/query",
+                params={
+                    "search_query": query,
+                    "start": offset,
+                    "max_results": page_size,
+                    "sortBy": "submittedDate",
+                    "sortOrder": "descending",
+                },
+            )
+            response.raise_for_status()
+            page = parse_feed(response.text)
+            papers.extend(page)
+            logger.info("[Academic/ArXiv] 第 %d 页返回 %d 篇", page_number, len(page))
+            if len(page) < page_size:
+                break
+            offset += len(page)
+
+        unique = list({paper.source_id: paper for paper in papers}.values())
         filtered = [
             paper
-            for paper in papers
+            for paper in unique
             if paper.submitted_at and window.contains(paper.submitted_at)
         ]
         logger.info(
-            "[Academic/ArXiv] 阶段 1/4 完成：API 返回 %d 篇，时间窗口内 %d 篇",
+            "[Academic/ArXiv] 阶段 1/4 完成：分页返回 %d 篇，去重后 %d 篇，时间窗口内 %d 篇",
             len(papers),
+            len(unique),
             len(filtered),
         )
         return filtered
