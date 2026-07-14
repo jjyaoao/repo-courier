@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: repo-courier-web
+    runtime: python
+    buildCommand: pip install '.[web]'
+    startCommand: repo-courier-web
+    healthCheckPath: /health
+    envVars:
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: REPO_COURIER_CONFIG
+        value: config/config.yaml
+      - key: REPO_COURIER_WEB_CONCURRENCY
+        value: "2"
+      - key: REPO_COURIER_ALLOWED_AI_BASE_URLS
+        value: https://api.openai.com/v1

@@ -108,6 +108,26 @@ repo-courier
 
 没有配置推送通道时，RepoCourier 仍会正常生成报告。
 
+## Web Beta
+
+RepoCourier 包含一个可选的轻量网页：用户写下关注词后，立即生成一次今日个性化三选。排序不依赖 AI；如果用户选择填写模型密钥，密钥只存在于本次请求内存中，不会写入报告、日志、数据库或浏览器存储。
+
+本地启动：
+
+```bash
+pip install -e '.[web]'
+repo-courier-web
+# 打开 http://127.0.0.1:8000
+```
+
+公开实例默认只允许 `https://api.openai.com/v1` 作为模型地址，避免页面被利用去请求任意内网服务。自托管时可以通过英文逗号扩展白名单：
+
+```bash
+export REPO_COURIER_ALLOWED_AI_BASE_URLS="https://api.example.com/v1"
+```
+
+使用仓库根目录的 `render.yaml` 可以在 Render 上创建 Web Service。部署时建议配置 `GITHUB_TOKEN`，提高 GitHub API 限额；不要在 Render 环境变量中配置公共的 `AI_API_KEY`，Web Beta 会明确忽略服务端的 AI 密钥。
+
 ## 可选 AI 摘要
 
 个性化排序不依赖 AI。配置兼容 OpenAI Chat Completions 的服务后，项目介绍会更自然；调用失败时会自动回退到本地摘要。
