@@ -53,10 +53,10 @@ class ArxivConfig:
 
 @dataclass(slots=True)
 class AcademicConfig:
-    enabled: bool = True
+    enabled: bool = False
     api_key: str = ""
-    base_url: str = "https://idealab.alibaba-inc.com/api/v1/chat/completions"
-    model: str = "bigmodel/GLM-5"
+    base_url: str = "https://api.openai.com/v1/chat/completions"
+    model: str = ""
     verify_ssl: bool = True
     arxiv: ArxivConfig = field(default_factory=ArxivConfig)
 
@@ -137,7 +137,10 @@ def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
     summary.api_key = os.getenv("AI_API_KEY", "")
     summary.base_url = _env("AI_BASE_URL", summary.base_url)
     summary.model = _env("AI_MODEL", summary.model)
-    academic.api_key = os.getenv("academic_api_key", "")
+    academic.api_key = os.getenv(
+        "ACADEMIC_API_KEY",
+        os.getenv("academic_api_key", ""),  # Backward compatibility with pre-0.1 configs.
+    )
     push.feishu_webhook = _env("FEISHU_WEBHOOK", push.feishu_webhook)
     push.wecom_webhook = _env("WECOM_WEBHOOK", push.wecom_webhook)
     push.serverchan_sendkey = _env("SERVERCHAN_SENDKEY", push.serverchan_sendkey)

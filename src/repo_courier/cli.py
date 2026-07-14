@@ -19,7 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", default="config/config.yaml", help="YAML 配置文件路径")
     parser.add_argument(
         "--date",
-        help="报告及论文检索日期，格式 YYYY-MM-DD，默认北京时间昨天",
+        help="Academic 论文检索日期，格式 YYYY-MM-DD，默认北京时间昨天",
     )
     parser.add_argument("--dry-run", action="store_true", help="生成报告但不发送消息")
     parser.add_argument(

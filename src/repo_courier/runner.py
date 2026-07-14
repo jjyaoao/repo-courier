@@ -38,7 +38,11 @@ def run(
     dry_run: bool = False,
     academic_only: bool = False,
 ) -> RunResult:
-    report_day = day or (datetime.now(BEIJING).date() - timedelta(days=1))
+    today = datetime.now(BEIJING).date()
+    academic_day = day or (today - timedelta(days=1))
+    # Trending is a live snapshot and must always be stored under the day on
+    # which it was fetched. Academic-only backfills keep their requested day.
+    report_day = academic_day if academic_only else today
     repositories: list[Repository] = []
     picks: list[Repository] = []
     history_path: Path | None = None
@@ -52,18 +56,18 @@ def run(
         github.enrich(repositories)
 
         history = HistoryStore(config.report.data_dir)
-        history.apply_rank_history(repositories, report_day)
+        history.apply_rank_history(repositories, today)
         picks = Personalizer(config.profile).select(repositories)
         github.enrich_readmes(picks)
         Summarizer(config.summary).summarize(picks)
-        history_path = history.save(repositories, report_day)
+        history_path = history.save(repositories, today)
 
-    window = SearchWindow.for_beijing_day(report_day)
+    window = SearchWindow.for_beijing_day(academic_day)
     academic_error = ""
     academic_scanned_count = 0
     papers: list[AcademicPaper] = []
     try:
-        logger.info("正在获取 %s 的学术论文", report_day.isoformat())
+        logger.info("正在获取 %s 的学术论文", academic_day.isoformat())
         academic_run = AcademicPipeline(config.academic, config.summary).run(config.profile, window)
         papers = academic_run.papers
         academic_scanned_count = academic_run.scanned_count

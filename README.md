@@ -4,7 +4,7 @@
 
 GitHub Trending 很热闹，但你真正关心的通常只有几个。RepoCourier 根据你的关注词重新排序榜单，给出 `深挖 / 关注 / 略过` 判断，并解释为什么这个项目适合你。没有足够相关的项目时宁缺毋滥，不会为了凑数而推送。
 
-Academic 学术源与 GitHub 独立处理，只在最终日报和推送摘要中合并。首个支持的学术子源是 ArXiv，默认检索北京时间昨天 00:00:00～23:59:59 提交的论文。
+Academic 是默认关闭的可选扩展：它与 GitHub 独立处理，只在最终日报和推送摘要中合并。首个支持的学术子源是 ArXiv，默认检索北京时间昨天 00:00:00～23:59:59 提交的论文。
 
 ```text
 1. [深挖 86/100] owner/agent-tool · 今日 +1,208 ⭐
@@ -57,6 +57,7 @@ academic:
   enabled: true
   base_url: https://www.example.cn/v1/chat/completions
   model: glm-5
+  verify_ssl: true
 ```
 
 推荐使用 GitHub 仓库描述和 Topics 中常见的英文关键词。也可以临时通过环境变量覆盖：
@@ -65,17 +66,17 @@ academic:
 export REPO_COURIER_INTERESTS="rust,cli,database,self-hosted"
 ```
 
-添加用于Academic文献检索的api key：
+如果启用 Academic，添加用于论文分析的 API Key：
 
-```Shell
-export academic_api_key="sk-xxxxxxxxxxxxxxxx"
+```bash
+export ACADEMIC_API_KEY="sk-xxxxxxxxxxxxxxxx"
 ```
 
 ### 2. 先看一次结果
 
 ```bash
 repo-courier --dry-run
-# 补跑指定北京时间自然日
+# 指定 Academic 检索的北京时间自然日
 repo-courier --date 2026-07-12 --dry-run
 ```
 
@@ -114,10 +115,10 @@ repo-courier
 ```bash
 export AI_API_KEY="your-key"
 export AI_MODEL="your-model-name"
-export academic_api_key="your-academic-key"
+export ACADEMIC_API_KEY="your-academic-key"
 ```
 
-GitHub 摘要使用 `summary.base_url` 和 `AI_API_KEY`；Academic 分析使用 `academic.base_url` 和独立的 `academic_api_key` 环境变量。
+GitHub 摘要使用 `summary.base_url` 和 `AI_API_KEY`；Academic 分析使用 `academic.base_url` 和独立的 `ACADEMIC_API_KEY` 环境变量。
 
 ## 每天自动运行
 
@@ -125,7 +126,7 @@ GitHub 摘要使用 `summary.base_url` 和 `AI_API_KEY`；Academic 分析使用 
 
 工作流会：
 
-1. 扫描 GitHub Trending与Academic 学术源，并检索指定北京时间自然日的 ArXiv 论文。
+1. 扫描当天 GitHub Trending；启用 Academic 后，同时检索指定北京时间自然日的 ArXiv 论文。
 2. 两个来源分别筛选和分析，只在最后合并。
 3. 只为入选项目读取 README，为初筛论文补充 Introduction，再生成报告并发送到已配置渠道。
 4. 把报告和历史快照提交回仓库。

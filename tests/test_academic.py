@@ -129,7 +129,10 @@ def test_pipeline_shortlists_twice_final_picks_and_combines_scores() -> None:
 
     analyzer = Analyzer()
     pipeline = AcademicPipeline(
-        AcademicConfig(arxiv=ArxivConfig(final_picks=2, max_analysis_workers=1)),
+        AcademicConfig(
+            enabled=True,
+            arxiv=ArxivConfig(final_picks=2, max_analysis_workers=1),
+        ),
         SummaryConfig(enabled=False),
         source=Source(),
         analyzer=analyzer,
@@ -192,7 +195,12 @@ def test_prompt_has_explicit_json_example_and_repairs_llm_json() -> None:
 
     paper = _paper("1", "Agent", "Abstract")
     analyzer = PaperAnalyzer(
-        AcademicConfig(api_key="secret", base_url="https://www.dmxapi.cn/v1"),
+        AcademicConfig(
+            enabled=True,
+            api_key="secret",
+            base_url="https://www.dmxapi.cn/v1",
+            model="model",
+        ),
         SummaryConfig(model="model"),
         client=Client(),
     )
@@ -237,7 +245,7 @@ def test_llm_raw_response_is_logged(caplog) -> None:
 
     paper = _paper("logged-paper", "Agent", "Abstract")
     analyzer = PaperAnalyzer(
-        AcademicConfig(api_key="secret"),
+        AcademicConfig(enabled=True, api_key="secret", model="model"),
         SummaryConfig(model="model"),
         client=Client(),
     )
@@ -269,7 +277,7 @@ def test_llm_response_without_choices_logs_body_and_explains_shape(caplog) -> No
 
     paper = _paper("invalid-response", "Agent", "Abstract")
     analyzer = PaperAnalyzer(
-        AcademicConfig(api_key="secret"),
+        AcademicConfig(enabled=True, api_key="secret", model="model"),
         SummaryConfig(model="model"),
         client=Client(),
     )
@@ -314,6 +322,7 @@ def test_academic_model_is_sent_independently_from_summary_model() -> None:
     client = Client()
     analyzer = PaperAnalyzer(
         AcademicConfig(
+            enabled=True,
             api_key="secret",
             base_url="https://idealab.alibaba-inc.com/api/v1/chat/completions",
             model="bigmodel/GLM-5",
@@ -354,7 +363,7 @@ def test_non_object_llm_json_falls_back_instead_of_crashing() -> None:
 
     paper = _paper("1", "Agent", "Abstract")
     analyzer = PaperAnalyzer(
-        AcademicConfig(api_key="secret"),
+        AcademicConfig(enabled=True, api_key="secret", model="model"),
         SummaryConfig(model="model"),
         client=Client(),
     )
