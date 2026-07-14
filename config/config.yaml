@@ -34,19 +34,13 @@ profile:
   daily_picks: 3
 
 academic:
-  enabled: true
-  # Academic 密钥只通过 export academic_api_key="..." 导入
+  # 可选扩展：默认关闭，避免改变 RepoCourier 的 GitHub 三选主流程。
+  enabled: false
+  # Academic 密钥只通过 ACADEMIC_API_KEY 环境变量导入。
   # 填写完整的 Chat Completions 接口地址，代码不会再追加路径。
-
-  ## alibaba api base
-  # base_url: https://idealab.alibaba-inc.com/api/v1/chat/completions
-  # model: bigmodel/GLM-5
-
-  ## dmx api base
-  base_url: https://www.dmxapi.cn/v1/chat/completions
-  model: glm-5
-  # 当前接口证书链包含自签名证书；测试时关闭校验。生产环境建议配置可信 CA 后改为 true。
-  verify_ssl: false
+  base_url: https://api.openai.com/v1/chat/completions
+  model: ""
+  verify_ssl: true
   sources:
     arxiv:
       enabled: true

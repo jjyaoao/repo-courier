@@ -1,4 +1,5 @@
-from datetime import date
+import json
+from datetime import date, datetime
 
 from repo_courier.academic import AcademicPipeline, AcademicRun
 from repo_courier.config import AcademicConfig, AppConfig, ProfileConfig, PushConfig, ReportConfig
@@ -10,6 +11,11 @@ from repo_courier.trending import TrendingClient
 
 
 def test_runner_only_reads_and_summarizes_selected_projects(tmp_path, monkeypatch) -> None:
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 7, 14, 9, 0, tzinfo=tz)
+
     repositories = [
         Repository(
             rank=1,
@@ -31,6 +37,7 @@ def test_runner_only_reads_and_summarizes_selected_projects(tmp_path, monkeypatc
 
     monkeypatch.setattr(TrendingClient, "fetch", lambda self: repositories)
     monkeypatch.setattr(GitHubClient, "enrich", lambda self, items: items)
+    monkeypatch.setattr("repo_courier.runner.datetime", FixedDateTime)
 
     def readmes(self, items):
         calls["readmes"] = [item.full_name for item in items]
@@ -58,6 +65,12 @@ def test_runner_only_reads_and_summarizes_selected_projects(tmp_path, monkeypatc
     assert [item.full_name for item in result.repositories] == ["acme/agent-runner"]
     assert calls["readmes"] == ["acme/agent-runner"]
     assert calls["summaries"] == ["acme/agent-runner"]
+    assert result.history_path is not None
+    assert result.history_path.name == "2026-07-14.json"
+    assert result.report_paths["json"].parent.name == "2026-07-14"
+    payload = json.loads(result.report_paths["json"].read_text(encoding="utf-8"))
+    assert payload["date"] == "2026-07-14"
+    assert payload["academic_window"]["start"].startswith("2026-07-10T00:00:00")
 
 
 def test_academic_only_skips_all_github_work_and_history(tmp_path, monkeypatch) -> None:
@@ -95,3 +108,4 @@ def test_academic_only_skips_all_github_work_and_history(tmp_path, monkeypatch) 
     assert result.scanned_count == 0
     assert result.history_path is None
     assert not (tmp_path / "history").exists()
+    assert result.report_paths["json"].parent.name == "2026-07-12"

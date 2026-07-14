@@ -9,7 +9,7 @@ def test_environment_overrides_yaml(tmp_path, monkeypatch) -> None:
     )
     monkeypatch.setenv("AI_MODEL", "env-model")
     monkeypatch.setenv("AI_API_KEY", "env-secret")
-    monkeypatch.setenv("academic_api_key", "academic-env-secret")
+    monkeypatch.setenv("ACADEMIC_API_KEY", "academic-env-secret")
     monkeypatch.setenv("FEISHU_WEBHOOK", "https://example.invalid/hook")
     monkeypatch.setenv("REPO_COURIER_INTERESTS", "rust, cli, database")
 
@@ -35,12 +35,30 @@ def test_academic_source_config(tmp_path) -> None:
 
     assert config.academic.enabled is True
     assert config.academic.base_url == "https://www.dmxapi.cn/v1"
-    assert config.academic.model == "bigmodel/GLM-5"
+    assert config.academic.model == ""
     assert config.academic.verify_ssl is True
     assert config.academic.api_key == ""
     assert config.academic.arxiv.final_picks == 4
     assert config.academic.arxiv.candidate_limit == 500
     assert config.academic.arxiv.page_size == 100
+
+
+def test_academic_is_opt_in_by_default(tmp_path) -> None:
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text("profile:\n  daily_picks: 3\n", encoding="utf-8")
+
+    config = load_config(config_file)
+
+    assert config.academic.enabled is False
+    assert config.academic.verify_ssl is True
+
+
+def test_legacy_lowercase_academic_key_is_still_supported(tmp_path, monkeypatch) -> None:
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text("academic:\n  enabled: true\n", encoding="utf-8")
+    monkeypatch.setenv("academic_api_key", "legacy-secret")
+
+    assert load_config(config_file).academic.api_key == "legacy-secret"
 
 
 def test_academic_numeric_strings_are_coerced_and_expressions_are_rejected(tmp_path) -> None:
