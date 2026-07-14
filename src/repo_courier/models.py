@@ -88,8 +88,66 @@ class AcademicPaper:
 
 
 @dataclass(slots=True)
+class TechBlogPost:
+    source_id: str
+    source_name: str
+    title: str
+    url: str
+    summary: str = ""
+    content_excerpt: str = ""
+    authors: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    published_at: datetime | None = None
+    matched_keywords: list[str] = field(default_factory=list)
+    excluded_keywords: list[str] = field(default_factory=list)
+    rule_score: int = 0
+    relevance_score: int = 0
+    technical_depth_score: int = 0
+    final_score: float = 0.0
+    recommendation_reason: str = ""
+    analysis_status: str = "pending"
+    pick_rank: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["published_at"] = self.published_at.isoformat() if self.published_at else None
+        return data
+
+
+@dataclass(slots=True)
+class TechNewsPost:
+    source_id: str
+    source_name: str
+    title: str
+    url: str
+    summary: str = ""
+    content_excerpt: str = ""
+    authors: list[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
+    published_at: datetime | None = None
+    matched_keywords: list[str] = field(default_factory=list)
+    excluded_keywords: list[str] = field(default_factory=list)
+    rule_score: int = 0
+    relevance_score: int = 0
+    importance_score: int = 0
+    final_score: float = 0.0
+    recommendation_reason: str = ""
+    analysis_status: str = "pending"
+    pick_rank: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["published_at"] = self.published_at.isoformat() if self.published_at else None
+        return data
+
+
+@dataclass(slots=True)
 class DailyReport:
     repositories: list[Repository] = field(default_factory=list)
     papers: list[AcademicPaper] = field(default_factory=list)
+    tech_blogs: list[TechBlogPost] = field(default_factory=list)
+    tech_news: list[TechNewsPost] = field(default_factory=list)
     academic_window: dict[str, str] = field(default_factory=dict)
     academic_error: str = ""
+    tech_blog_errors: dict[str, str] = field(default_factory=dict)
+    tech_news_errors: dict[str, str] = field(default_factory=dict)

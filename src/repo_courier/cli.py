@@ -14,12 +14,12 @@ from .runner import run
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="repo-courier",
-        description="抓取、总结并投递 GitHub Trending 与学术论文日报",
+        description="抓取、筛选并投递 GitHub、学术论文与科技官方内容日报",
     )
     parser.add_argument("--config", default="config/config.yaml", help="YAML 配置文件路径")
     parser.add_argument(
         "--date",
-        help="Academic 论文检索日期，格式 YYYY-MM-DD，默认北京时间昨天",
+        help="报告及各来源检索日期，格式 YYYY-MM-DD，默认北京时间昨天",
     )
     parser.add_argument("--dry-run", action="store_true", help="生成报告但不发送消息")
     parser.add_argument(
@@ -53,8 +53,11 @@ def main(argv: list[str] | None = None) -> int:
         logging.getLogger(__name__).error("运行失败: %s", exc)
         return 1
     print(
-        f"完成：扫描 {result.scanned_count} 个项目和 {result.academic_scanned_count} 篇论文，"
-        f"精选 {len(result.repositories)} 个项目和 {len(result.papers)} 篇论文"
+        f"完成：扫描 {result.scanned_count} 个项目、{result.academic_scanned_count} 篇论文、"
+        f"{result.tech_blog_scanned_count} 篇技术博客和 "
+        f"{result.tech_news_scanned_count} 条科技新闻；"
+        f"精选 {len(result.repositories)} 个项目、{len(result.papers)} 篇论文、"
+        f"{len(result.tech_blogs)} 篇技术博客和 {len(result.tech_news)} 条科技新闻"
     )
     print(f"Markdown：{result.report_paths['markdown']}")
     return 0

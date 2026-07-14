@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import re
-
 from .config import ProfileConfig
+from .matching import contains, interest_terms, normalize
 from .models import Repository
 
 
@@ -24,28 +23,28 @@ class Personalizer:
         return picks
 
     def _score(self, repository: Repository) -> None:
-        name_topics = _normalize(" ".join([repository.name, *repository.topics]))
-        description = _normalize(repository.description)
-        readme = _normalize(repository.readme_excerpt[:3000])
+        name_topics = normalize(" ".join([repository.name, *repository.topics]))
+        description = normalize(repository.description)
+        readme = normalize(repository.readme_excerpt[:3000])
         matched: list[str] = []
         score = 0
 
         for interest in self.config.interests:
-            terms = _interest_terms(interest)
-            if any(_contains(name_topics, term) for term in terms):
+            terms = interest_terms(interest)
+            if any(contains(name_topics, term) for term in terms):
                 score += 30
                 matched.append(interest)
-            elif any(_contains(description, term) for term in terms):
+            elif any(contains(description, term) for term in terms):
                 score += 20
                 matched.append(interest)
-            elif any(_contains(readme, term) for term in terms):
+            elif any(contains(readme, term) for term in terms):
                 score += 8
                 matched.append(interest)
 
         excluded = [
             keyword
             for keyword in self.config.exclude_keywords
-            if _contains(" ".join([name_topics, description, readme]), _normalize(keyword))
+            if contains(" ".join([name_topics, description, readme]), normalize(keyword))
         ]
         if excluded:
             score -= 35
@@ -61,23 +60,6 @@ class Personalizer:
             repository.relevance_score, bool(repository.matched_interests), bool(excluded)
         )
         repository.why_for_you = _reason(repository, excluded)
-
-
-def _normalize(value: str) -> str:
-    return re.sub(r"[^a-z0-9\u4e00-\u9fff]+", " ", value.lower()).strip()
-
-
-def _interest_terms(interest: str) -> list[str]:
-    normalized = _normalize(interest)
-    terms = [normalized]
-    terms.extend(part for part in normalized.split() if len(part) >= 2)
-    return list(dict.fromkeys(term for term in terms if term))
-
-
-def _contains(text: str, term: str) -> bool:
-    if not term:
-        return False
-    return f" {term} " in f" {text} " or term in text.split()
 
 
 def _recommendation(score: int, has_match: bool, excluded: bool) -> str:

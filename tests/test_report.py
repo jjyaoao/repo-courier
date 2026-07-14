@@ -2,7 +2,13 @@ import json
 from datetime import date
 
 from repo_courier.config import ReportConfig
-from repo_courier.models import AcademicPaper, DailyReport, Repository
+from repo_courier.models import (
+    AcademicPaper,
+    DailyReport,
+    Repository,
+    TechBlogPost,
+    TechNewsPost,
+)
 from repo_courier.report import ReportWriter
 
 
@@ -79,3 +85,44 @@ def test_writer_merges_academic_only_at_report_layer(tmp_path) -> None:
     assert "核心贡献" in markdown
     assert payload["repositories"][0]["full_name"] == "acme/rocket"
     assert payload["academic"]["papers"][0]["source_id"] == "2607.00001"
+
+
+def test_writer_keeps_technology_blog_and_news_as_separate_sections(tmp_path) -> None:
+    blog = TechBlogPost(
+        source_id="cloudflare:1",
+        source_name="Cloudflare Blog",
+        title="Agent infrastructure",
+        url="https://example.com/blog",
+        summary="技术博客摘要",
+        matched_keywords=["agent"],
+        relevance_score=8,
+        technical_depth_score=7,
+        final_score=69.6,
+        recommendation_reason="包含具体工程实现。",
+        pick_rank=1,
+    )
+    news = TechNewsPost(
+        source_id="apple:1",
+        source_name="Apple Newsroom",
+        title="AI product launch",
+        url="https://example.com/news",
+        summary="科技新闻摘要",
+        matched_keywords=["agent"],
+        relevance_score=8,
+        importance_score=9,
+        final_score=74.4,
+        recommendation_reason="属于重要产品发布。",
+        pick_rank=1,
+    )
+    writer = ReportWriter(ReportConfig(output_dir=str(tmp_path / "reports")))
+
+    paths = writer.write(
+        DailyReport(tech_blogs=[blog], tech_news=[news]), date(2026, 7, 12)
+    )
+
+    markdown = paths["markdown"].read_text(encoding="utf-8")
+    payload = json.loads(paths["json"].read_text(encoding="utf-8"))
+    assert "## 科技技术博客" in markdown
+    assert "## 科技新闻发布" in markdown
+    assert payload["tech_blogs"]["posts"][0]["source_id"] == "cloudflare:1"
+    assert payload["tech_news"]["posts"][0]["source_id"] == "apple:1"

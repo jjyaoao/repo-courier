@@ -1,10 +1,12 @@
 📮 RepoCourier
 
-> 每天从 GitHub Trending 和学术数据库中，挑出真正与你有关的项目与论文。
+> 每天从 GitHub Trending、学术数据库和科技大厂官方 RSS 中，挑出真正与你有关的内容。
 
 GitHub Trending 很热闹，但你真正关心的通常只有几个。RepoCourier 根据你的关注词重新排序榜单，给出 `深挖 / 关注 / 略过` 判断，并解释为什么这个项目适合你。没有足够相关的项目时宁缺毋滥，不会为了凑数而推送。
 
 Academic 是默认关闭的可选扩展：它与 GitHub 独立处理，只在最终日报和推送摘要中合并。首个支持的学术子源是 ArXiv，默认检索北京时间昨天 00:00:00～23:59:59 提交的论文。
+
+Tech Blog 与 Tech News 同样是两条独立流水线：前者从 10 个官方技术源中最多选 5 篇，后者从 4 个官方新闻源中最多选 3 篇。两类当前共用 `profile` 关键词，先进行透明的规则初筛，再使用 Academic 的模型配置进行语义精筛；模型不可用时自动回退到规则分。
 
 ```text
 1. [深挖 86/100] owner/agent-tool · 今日 +1,208 ⭐
@@ -138,7 +140,7 @@ export AI_MODEL="your-model-name"
 export ACADEMIC_API_KEY="your-academic-key"
 ```
 
-GitHub 摘要使用 `summary.base_url` 和 `AI_API_KEY`；Academic 分析使用 `academic.base_url` 和独立的 `ACADEMIC_API_KEY` 环境变量。
+GitHub 摘要使用 `summary.base_url` 和 `AI_API_KEY`；Academic、Tech Blog 和 Tech News 分析使用 `academic.base_url` 和独立的 `ACADEMIC_API_KEY` 环境变量。
 
 ## 每天自动运行
 
@@ -146,8 +148,8 @@ GitHub 摘要使用 `summary.base_url` 和 `AI_API_KEY`；Academic 分析使用 
 
 工作流会：
 
-1. 扫描当天 GitHub Trending；启用 Academic 后，同时检索指定北京时间自然日的 ArXiv 论文。
-2. 两个来源分别筛选和分析，只在最后合并。
+1. 扫描 GitHub Trending、Tech Blog 和 Tech News 官方 RSS；启用 Academic 后，同时检索指定北京时间自然日的 ArXiv 论文。
+2. 四个类别分别筛选和分析，只在最后合并。
 3. 只为入选项目读取 README，为初筛论文补充 Introduction，再生成报告并发送到已配置渠道。
 4. 把报告和历史快照提交回仓库。
 
@@ -178,6 +180,8 @@ src/repo_courier/
 ├── personalize.py    # 个性化三选（核心）
 ├── summary.py        # AI / 本地摘要
 ├── academic/         # Academic 流水线与 ArXiv 子源
+├── feeds.py          # Tech Blog / Tech News RSS 抓取与筛选
+├── matching.py       # GitHub 与 RSS 共用的关键词匹配
 ├── report.py         # Markdown / HTML / JSON
 ├── pushers/          # 飞书、微信、QQ
 └── runner.py         # 流程编排
@@ -196,7 +200,7 @@ ruff check .
 - 不要把 Token、Webhook 或 SendKey 提交到 Git。
 - 个人微信没有通用官方机器人接口，Server酱属于第三方服务。
 - QQ 推送依赖 OneBot 实现，请遵守相关平台规则。
-- 开启 AI 后，仓库公开 README 片段会发送给所配置的模型服务。
+- 开启 AI 后，仓库公开 README、论文内容及入围 RSS 摘要会发送给所配置的模型服务。
 
 ## License
 

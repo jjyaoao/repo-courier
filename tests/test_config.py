@@ -79,3 +79,22 @@ def test_academic_numeric_strings_are_coerced_and_expressions_are_rejected(tmp_p
         assert "不能使用表达式" in str(exc)
     else:
         raise AssertionError("表达式形式的 max_analysis_workers 应被拒绝")
+
+
+def test_technology_feed_sources_are_loaded_separately(tmp_path) -> None:
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        "tech_blog:\n  enabled: true\n  final_picks: 5\n  sources:\n"
+        "    - id: openai\n      name: OpenAI News\n      url: https://openai.com/news/rss.xml\n"
+        "tech_news:\n  enabled: true\n  final_picks: 3\n  sources:\n"
+        "    - id: apple\n      name: Apple Newsroom\n"
+        "      url: https://www.apple.com/newsroom/rss-feed.rss\n",
+        encoding="utf-8",
+    )
+
+    config = load_config(config_file)
+
+    assert config.tech_blog.final_picks == 5
+    assert config.tech_blog.sources[0].source_id == "openai"
+    assert config.tech_news.final_picks == 3
+    assert config.tech_news.sources[0].name == "Apple Newsroom"

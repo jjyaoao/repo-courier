@@ -61,6 +61,31 @@ class AcademicConfig:
     arxiv: ArxivConfig = field(default_factory=ArxivConfig)
 
 
+@dataclass(frozen=True, slots=True)
+class FeedSourceConfig:
+    source_id: str
+    name: str
+    url: str
+
+
+@dataclass(slots=True)
+class TechBlogConfig:
+    enabled: bool = False
+    final_picks: int = 5
+    max_analysis_workers: int = 10
+    content_max_chars: int = 6000
+    sources: list[FeedSourceConfig] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class TechNewsConfig:
+    enabled: bool = False
+    final_picks: int = 3
+    max_analysis_workers: int = 6
+    content_max_chars: int = 6000
+    sources: list[FeedSourceConfig] = field(default_factory=list)
+
+
 @dataclass(slots=True)
 class ReportConfig:
     output_dir: str = "reports"
@@ -85,6 +110,8 @@ class AppConfig:
     summary: SummaryConfig = field(default_factory=SummaryConfig)
     profile: ProfileConfig = field(default_factory=ProfileConfig)
     academic: AcademicConfig = field(default_factory=AcademicConfig)
+    tech_blog: TechBlogConfig = field(default_factory=TechBlogConfig)
+    tech_news: TechNewsConfig = field(default_factory=TechNewsConfig)
     report: ReportConfig = field(default_factory=ReportConfig)
     push: PushConfig = field(default_factory=PushConfig)
 
@@ -130,6 +157,8 @@ def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
     academic_values.pop("api_key", None)
     academic_values.pop("arxiv", None)
     academic = AcademicConfig(**academic_values, arxiv=arxiv)
+    tech_blog = _feed_config(TechBlogConfig, _section(data, "tech_blog"), "tech_blog")
+    tech_news = _feed_config(TechNewsConfig, _section(data, "tech_news"), "tech_news")
     report = ReportConfig(**_known(ReportConfig, _section(data, "report")))
     push = PushConfig(**_known(PushConfig, _section(data, "push")))
 
@@ -155,6 +184,8 @@ def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
         summary=summary,
         profile=profile,
         academic=academic,
+        tech_blog=tech_blog,
+        tech_news=tech_news,
         report=report,
         push=push,
     )
@@ -163,6 +194,33 @@ def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
 def _known(cls: type[Any], values: dict[str, Any]) -> dict[str, Any]:
     fields = cls.__dataclass_fields__.keys()
     return {key: value for key, value in values.items() if key in fields}
+
+
+def _feed_config(
+    cls: type[TechBlogConfig] | type[TechNewsConfig],
+    values: dict[str, Any],
+    section_name: str,
+) -> TechBlogConfig | TechNewsConfig:
+    known = _known(cls, values)
+    raw_sources = known.pop("sources", [])
+    if not isinstance(raw_sources, list):
+        raise ValueError(f"配置 {section_name}.sources 必须是数组")
+    sources: list[FeedSourceConfig] = []
+    for index, raw in enumerate(raw_sources):
+        if not isinstance(raw, dict):
+            raise ValueError(f"配置 {section_name}.sources[{index}] 必须是对象")
+        source_id = str(raw.get("id") or raw.get("source_id") or "").strip()
+        name = str(raw.get("name") or "").strip()
+        url = str(raw.get("url") or "").strip()
+        if not source_id or not name or not url:
+            raise ValueError(
+                f"配置 {section_name}.sources[{index}] 必须包含 id、name、url"
+            )
+        sources.append(FeedSourceConfig(source_id, name, url))
+    for name in ("final_picks", "max_analysis_workers", "content_max_chars"):
+        if name in known:
+            known[name] = _positive_int(known[name], f"{section_name}.{name}")
+    return cls(**known, sources=sources)
 
 
 def _env(name: str, default: str) -> str:

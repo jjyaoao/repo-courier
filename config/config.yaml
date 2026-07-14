@@ -52,6 +52,62 @@ academic:
       introduction_max_chars: 12000
       max_analysis_workers: 50
 
+tech_blog:
+  enabled: true
+  final_picks: 5
+  max_analysis_workers: 10
+  content_max_chars: 6000
+  sources:
+    - id: openai
+      name: OpenAI News
+      url: https://openai.com/news/rss.xml
+    - id: google
+      name: Google The Keyword
+      url: https://blog.google/rss/
+    - id: microsoft-research
+      name: Microsoft Research
+      url: https://www.microsoft.com/en-us/research/feed/
+    - id: aws-machine-learning
+      name: AWS Machine Learning
+      url: https://aws.amazon.com/blogs/machine-learning/feed/
+    - id: meta-engineering
+      name: Meta Engineering
+      url: https://engineering.fb.com/feed/
+    - id: github
+      name: GitHub Blog
+      url: https://github.blog/feed/
+    - id: cloudflare
+      name: Cloudflare Blog
+      url: https://blog.cloudflare.com/rss/
+    - id: nvidia-developer
+      name: NVIDIA Developer Blog
+      url: https://developer.nvidia.com/blog/feed/
+    - id: netflix-techblog
+      name: Netflix TechBlog
+      url: https://netflixtechblog.com/feed
+    - id: salesforce-engineering
+      name: Salesforce Engineering
+      url: https://engineering.salesforce.com/feed/
+
+tech_news:
+  enabled: true
+  final_picks: 3
+  max_analysis_workers: 6
+  content_max_chars: 6000
+  sources:
+    - id: microsoft
+      name: Microsoft Official Blog
+      url: https://blogs.microsoft.com/feed/
+    - id: aws-news
+      name: AWS News Blog
+      url: https://aws.amazon.com/blogs/aws/feed/
+    - id: apple-newsroom
+      name: Apple Newsroom
+      url: https://www.apple.com/newsroom/rss-feed.rss
+    - id: nvidia
+      name: NVIDIA Blog
+      url: https://blogs.nvidia.com/feed/
+
 report:
   output_dir: reports
   data_dir: data/history
