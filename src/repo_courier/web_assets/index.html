@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="RepoCourier 会根据你的关注词，从 GitHub Trending 中选出今天最值得打开的 3 个项目。"
+    />
+    <title>RepoCourier · 今日个性化三选</title>
+    <link rel="stylesheet" href="/assets/app.css" />
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="RepoCourier 首页">
+          <span class="brand-mark" aria-hidden="true">📮</span>
+          <span>RepoCourier</span>
+        </a>
+        <span class="beta-pill">WEB BETA</span>
+      </header>
+
+      <main>
+        <section class="hero">
+          <p class="eyebrow">少看榜单，多看真正与你有关的项目</p>
+          <h1>今天的 GitHub Trending，<br />你只需要打开 <em>3 个</em>。</h1>
+          <p class="hero-copy">
+            写下你正在关注的技术方向。RepoCourier 会扫描榜单、重新排序，
+            并解释每个推荐为什么适合你。
+          </p>
+        </section>
+
+        <section class="workspace" aria-labelledby="configure-title">
+          <form id="preview-form" class="config-card">
+            <div class="section-heading">
+              <span class="step">01</span>
+              <div>
+                <h2 id="configure-title">写下关注词</h2>
+                <p>英文关键词效果更好，使用逗号或换行分隔。</p>
+              </div>
+            </div>
+
+            <label class="field-label" for="interests">我最近在关注</label>
+            <textarea
+              id="interests"
+              name="interests"
+              rows="3"
+              maxlength="420"
+              placeholder="agent, llm, mcp, developer tools, self-hosted"
+              required
+            >agent, llm, mcp, developer tools, automation, self-hosted</textarea>
+
+            <div class="field-grid">
+              <div>
+                <label class="field-label" for="language">编程语言</label>
+                <select id="language" name="language">
+                  <option value="">全部语言</option>
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="go">Go</option>
+                  <option value="rust">Rust</option>
+                  <option value="java">Java</option>
+                </select>
+              </div>
+              <div class="privacy-note">
+                <span class="privacy-icon" aria-hidden="true">◈</span>
+                <p><strong>默认不需要 AI</strong><br />个性化排序始终在本地规则中完成。</p>
+              </div>
+            </div>
+
+            <details class="ai-panel">
+              <summary>
+                <span>可选：使用你的 AI 模型润色项目摘要</span>
+                <small>密钥仅用于本次请求</small>
+              </summary>
+              <div class="ai-fields">
+                <label class="field-label" for="ai-base-url">模型服务</label>
+                <select id="ai-base-url" name="ai-base-url">
+                  <option value="https://api.openai.com/v1">OpenAI API</option>
+                </select>
+                <div class="field-grid">
+                  <div>
+                    <label class="field-label" for="ai-model">模型名称</label>
+                    <input
+                      id="ai-model"
+                      name="ai-model"
+                      autocomplete="off"
+                      placeholder="your-model-name"
+                    />
+                  </div>
+                  <div>
+                    <label class="field-label" for="ai-api-key">API Key</label>
+                    <input
+                      id="ai-api-key"
+                      name="ai-api-key"
+                      type="password"
+                      autocomplete="off"
+                      placeholder="sk-..."
+                    />
+                  </div>
+                </div>
+                <p class="security-copy">
+                  RepoCourier 不会把密钥写入报告、日志、数据库或浏览器存储。
+                </p>
+              </div>
+            </details>
+
+            <button id="submit-button" class="primary-button" type="submit">
+              <span>生成今日三选</span>
+              <span aria-hidden="true">→</span>
+            </button>
+            <p id="form-error" class="form-error" role="alert" hidden></p>
+          </form>
+
+          <aside class="principle-card" aria-label="RepoCourier 原则">
+            <p class="mono-label">THE COURIER RULE</p>
+            <blockquote>热度只是候选信号，<br />与你相关才是推荐理由。</blockquote>
+            <ol>
+              <li><span>20</span> 扫描 Trending 候选</li>
+              <li><span>01</span> 按你的关注词排序</li>
+              <li><span>03</span> 只保留值得打开的项目</li>
+            </ol>
+          </aside>
+        </section>
+
+        <section id="loading" class="loading-state" hidden aria-live="polite">
+          <div class="route-line"><span></span></div>
+          <p>正在扫描 GitHub Trending 并重新排序……</p>
+          <small>通常需要 10–30 秒</small>
+        </section>
+
+        <section id="results" class="results" hidden aria-labelledby="results-title">
+          <div class="results-heading">
+            <div>
+              <p class="eyebrow">今日个性化速递</p>
+              <h2 id="results-title">最值得你打开的项目</h2>
+            </div>
+            <p id="scan-summary" class="scan-summary"></p>
+          </div>
+          <div id="result-list" class="result-list"></div>
+          <div id="empty-result" class="empty-result" hidden>
+            <h3>今天没有足够相关的项目</h3>
+            <p>RepoCourier 不会为了凑数推荐。可以尝试放宽关注词后再试一次。</p>
+          </div>
+        </section>
+      </main>
+
+      <footer>
+        <span>RepoCourier · Open source personal trending filter</span>
+        <a href="https://github.com/jjyaoao/repo-courier" rel="noreferrer">GitHub ↗</a>
+      </footer>
+    </div>
+  </body>
+</html>

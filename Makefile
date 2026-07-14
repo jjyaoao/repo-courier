@@ -1,7 +1,10 @@
-.PHONY: install test lint run dry-run
+.PHONY: install install-web test lint run dry-run web
 
 install:
 	python -m pip install -e '.[dev]'
+
+install-web:
+	python -m pip install -e '.[dev,web]'
 
 test:
 	pytest
@@ -14,3 +17,6 @@ run:
 
 dry-run:
 	repo-courier --config config/config.yaml --dry-run
+
+web:
+	repo-courier-web

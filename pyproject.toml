@@ -28,12 +28,17 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<9", "ruff>=0.5,<1"]
+web = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1"]
 
 [project.scripts]
 repo-courier = "repo_courier.cli:main"
+repo-courier-web = "repo_courier.web:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+repo_courier = ["web_assets/*.html", "web_assets/*.css", "web_assets/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
