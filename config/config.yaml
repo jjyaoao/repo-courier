@@ -24,9 +24,6 @@ profile:
     - agent
     - llm
     - mcp
-    - developer tools
-    - automation
-    - self-hosted
   exclude_keywords:
     - awesome list
     - interview
@@ -35,7 +32,7 @@ profile:
 
 academic:
   # 可选扩展：默认关闭，避免改变 RepoCourier 的 GitHub 三选主流程。
-  enabled: false
+  enabled: true
   # Academic 密钥只通过 ACADEMIC_API_KEY 环境变量导入。
   # 填写完整的 Chat Completions 接口地址，代码不会再追加路径。
   base_url: https://api.openai.com/v1/chat/completions

@@ -36,6 +36,36 @@ CONTENT = "{http://purl.org/rss/1.0/modules/content/}"
 DC = "{http://purl.org/dc/elements/1.1/}"
 USER_AGENT = "RepoCourier/0.1 (official technology feed reader)"
 
+FEED_ANALYSIS_SYSTEM_PROMPT = """
+## Role
+你是严谨的科技内容筛选与评估助手。只根据输入内容判断，不得臆造。
+
+## Input
+你会收到一个 JSON 对象：
+- category：内容类别，值为 tech_blog 或 tech_news。
+- keywords：用户检索关键词列表。
+- source：内容来源。
+- content：拼接后的内容，包含 Title、Tags 和正文摘要。
+
+## Task
+你需要根据 keywords 与 content 生成内容的相关性分数、创新分数、内容概要和推荐理由。
+
+## Output
+只返回一个合法的 JSON 对象，不要返回 Markdown 代码块或 JSON 之外的解释。
+relevance_score 和 innovation_score 必须是 0 到 10 的整数。
+summary 和 recommendation_reason 必须使用中文，且分别不超过 200 字。
+
+输出格式示例：
+```json
+{
+  "relevance_score": 9,
+  "innovation_score": 8,
+  "summary": "内容介绍了什么问题、方案及主要信息。",
+  "recommendation_reason": "内容与关注方向高度相关，并包含值得进一步了解的新方法或实践。"
+}
+```
+""".strip()
+
 
 @dataclass(slots=True)
 class FeedEntry:
@@ -94,7 +124,7 @@ class FeedAnalyzer:
                     "temperature": 0.2,
                     "response_format": {"type": "json_object"},
                     "messages": [
-                        {"role": "system", "content": _system_prompt(post)},
+                        {"role": "system", "content": FEED_ANALYSIS_SYSTEM_PROMPT},
                         {"role": "user", "content": _user_prompt(post, profile)},
                     ],
                 },
@@ -108,10 +138,7 @@ class FeedAnalyzer:
             if not isinstance(payload, dict):
                 raise ValueError("LLM 返回 JSON 的顶层必须是对象")
             post.relevance_score = _score(payload.get("relevance_score"))
-            if isinstance(post, TechBlogPost):
-                post.technical_depth_score = _score(payload.get("technical_depth_score"))
-            else:
-                post.importance_score = _score(payload.get("importance_score"))
+            post.innovation_score = _score(payload.get("innovation_score"))
             generated_summary = str(payload.get("summary") or "").strip()
             reason = str(payload.get("recommendation_reason") or "").strip()
             if not generated_summary or not reason:
@@ -119,7 +146,7 @@ class FeedAnalyzer:
             if not _contains_chinese(generated_summary) or not _contains_chinese(reason):
                 raise ValueError("摘要和推荐理由必须使用中文")
             post.summary = _truncate(generated_summary, 200)
-            post.recommendation_reason = _truncate(reason, 100)
+            post.recommendation_reason = _truncate(reason, 200)
             post.analysis_status = "ai"
         except (
             httpx.HTTPError,
@@ -316,10 +343,7 @@ def score_post(post: FeedPost, profile: ProfileConfig) -> bool:
 def combined_score(post: FeedPost) -> float:
     if post.analysis_status != "ai":
         return float(post.rule_score)
-    secondary = (
-        post.technical_depth_score if isinstance(post, TechBlogPost) else post.importance_score
-    )
-    llm_score = (post.relevance_score * 0.6 + secondary * 0.4) * 10
+    llm_score = (post.relevance_score * 0.6 + post.innovation_score * 0.4) * 10
     return round(post.rule_score * 0.4 + llm_score * 0.6, 2)
 
 
@@ -382,33 +406,20 @@ def _parse_atom_entry(node: ET.Element, limit: int) -> FeedEntry:
     )
 
 
-def _system_prompt(post: FeedPost) -> str:
-    if isinstance(post, TechBlogPost):
-        secondary = (
-            '"technical_depth_score": 0到10的整数，衡量架构、实现、算法、性能或工程经验深度'
-        )
-    else:
-        secondary = '"importance_score": 0到10的整数，衡量产品、模型、平台或安全发布的重要性'
-    return (
-        "你是严谨的科技内容筛选助手，只能根据输入内容判断，不得臆造。"
-        "只返回合法 JSON 对象。"
-        '"relevance_score" 为0到10的整数，衡量与用户关键词的实际相关性；'
-        f"{secondary}；"
-        '"summary" 为不超过200字的中文摘要；'
-        '"recommendation_reason" 为不超过100字的中文推荐理由。'
-    )
-
-
 def _user_prompt(post: FeedPost, profile: ProfileConfig) -> str:
     return json.dumps(
         {
             "category": "tech_blog" if isinstance(post, TechBlogPost) else "tech_news",
-            "profile_keywords": profile.interests,
+            "keywords": profile.interests,
             "source": post.source_name,
-            "title": post.title,
-            "tags": post.tags,
             "published_at": post.published_at.isoformat() if post.published_at else None,
-            "content": post.content_excerpt,
+            "content": "\n\n".join(
+                [
+                    f"Title:\n{post.title}",
+                    f"Tags:\n{', '.join(post.tags)}",
+                    f"Content:\n{post.content_excerpt}",
+                ]
+            ),
             "matched_keywords": post.matched_keywords,
             "rule_score": post.rule_score,
         },

@@ -1,3 +1,4 @@
+import json
 from datetime import date
 
 from repo_courier.academic.base import SearchWindow
@@ -10,6 +11,7 @@ from repo_courier.config import (
     TechNewsConfig,
 )
 from repo_courier.feeds import (
+    FEED_ANALYSIS_SYSTEM_PROMPT,
     FeedAnalyzer,
     TechBlogPipeline,
     TechNewsPipeline,
@@ -66,7 +68,7 @@ def test_rule_score_uses_highest_field_weight_once_and_excludes() -> None:
     assert score_post(post, profile) is False
 
 
-def test_combined_scores_differ_for_blog_and_news() -> None:
+def test_combined_scores_use_relevance_and_innovation() -> None:
     blog = TechBlogPost(
         source_id="blog",
         source_name="Source",
@@ -74,7 +76,7 @@ def test_combined_scores_differ_for_blog_and_news() -> None:
         url="https://example.com/blog",
         rule_score=60,
         relevance_score=8,
-        technical_depth_score=7,
+        innovation_score=7,
         analysis_status="ai",
     )
     news = TechNewsPost(
@@ -84,7 +86,7 @@ def test_combined_scores_differ_for_blog_and_news() -> None:
         url="https://example.com/news",
         rule_score=60,
         relevance_score=8,
-        importance_score=9,
+        innovation_score=9,
         analysis_status="ai",
     )
 
@@ -92,7 +94,7 @@ def test_combined_scores_differ_for_blog_and_news() -> None:
     assert combined_score(news) == 74.4
 
 
-def test_llm_analyzer_uses_category_specific_secondary_score() -> None:
+def test_llm_analyzer_uses_academic_style_output_for_both_categories() -> None:
     class Response:
         def __init__(self, payload):
             self.payload = payload
@@ -104,17 +106,14 @@ def test_llm_analyzer_uses_category_specific_secondary_score() -> None:
             return {"choices": [{"message": {"content": self.payload}}]}
 
     class Client:
+        requests = []
+
         def post(self, url, headers, json):
-            category = json["messages"][1]["content"]
-            secondary = (
-                '"technical_depth_score": 7'
-                if '"category": "tech_blog"' in category
-                else '"importance_score": 9'
-            )
+            self.requests.append(json)
             return Response(
                 "{"
                 '"relevance_score": 8,'
-                f"{secondary},"
+                '"innovation_score": 7,'
                 '"summary": "中文摘要",'
                 '"recommendation_reason": "值得关注"'
                 "}"
@@ -133,9 +132,18 @@ def test_llm_analyzer_uses_category_specific_secondary_score() -> None:
     analyzer.analyze(news, profile)
 
     assert blog.analysis_status == "ai"
-    assert blog.technical_depth_score == 7
+    assert blog.innovation_score == 7
     assert news.analysis_status == "ai"
-    assert news.importance_score == 9
+    assert news.innovation_score == 7
+    assert "## Role" in FEED_ANALYSIS_SYSTEM_PROMPT
+    assert '"relevance_score"' in FEED_ANALYSIS_SYSTEM_PROMPT
+    assert '"innovation_score"' in FEED_ANALYSIS_SYSTEM_PROMPT
+    assert "technical_depth_score" not in FEED_ANALYSIS_SYSTEM_PROMPT
+    assert "importance_score" not in FEED_ANALYSIS_SYSTEM_PROMPT
+    blog_input = json.loads(analyzer.client.requests[0]["messages"][1]["content"])
+    assert blog_input["category"] == "tech_blog"
+    assert blog_input["keywords"] == ["agent"]
+    assert "Title:\nAgent" in blog_input["content"]
 
 
 def test_pipelines_keep_independent_final_limits() -> None:
@@ -160,10 +168,7 @@ def test_pipelines_keep_independent_final_limits() -> None:
     class Analyzer:
         def analyze(self, post, profile):
             post.relevance_score = 8
-            if isinstance(post, TechBlogPost):
-                post.technical_depth_score = 7
-            else:
-                post.importance_score = 9
+            post.innovation_score = 7
             post.summary = "中文摘要"
             post.recommendation_reason = "值得关注"
             post.analysis_status = "ai"

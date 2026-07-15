@@ -102,7 +102,7 @@ class TechBlogPost:
     excluded_keywords: list[str] = field(default_factory=list)
     rule_score: int = 0
     relevance_score: int = 0
-    technical_depth_score: int = 0
+    innovation_score: int = 0
     final_score: float = 0.0
     recommendation_reason: str = ""
     analysis_status: str = "pending"
@@ -129,7 +129,7 @@ class TechNewsPost:
     excluded_keywords: list[str] = field(default_factory=list)
     rule_score: int = 0
     relevance_score: int = 0
-    importance_score: int = 0
+    innovation_score: int = 0
     final_score: float = 0.0
     recommendation_reason: str = ""
     analysis_status: str = "pending"

@@ -188,11 +188,11 @@ class ReportWriter:
         if report.tech_blogs:
             lines.extend(["🛠 科技技术博客", ""])
             for post in report.tech_blogs:
-                lines.extend(self._feed_digest(post, "技术深度", post.technical_depth_score))
+                lines.extend(self._feed_digest(post, "创新", post.innovation_score))
         if report.tech_news:
             lines.extend(["📰 科技新闻发布", ""])
             for post in report.tech_news:
-                lines.extend(self._feed_digest(post, "重要性", post.importance_score))
+                lines.extend(self._feed_digest(post, "创新", post.innovation_score))
         lines.append("少看榜单，多看真正与你有关的内容。")
         return "\n".join(lines)
 
@@ -234,14 +234,14 @@ class ReportWriter:
     def _blog_markdown(post: TechBlogPost) -> list[str]:
         return ReportWriter._feed_markdown(
             post,
-            f"相关性 **{post.relevance_score}/10** · 技术深度 **{post.technical_depth_score}/10**",
+            f"相关性 **{post.relevance_score}/10** · 创新性 **{post.innovation_score}/10**",
         )
 
     @staticmethod
     def _news_markdown(post: TechNewsPost) -> list[str]:
         return ReportWriter._feed_markdown(
             post,
-            f"相关性 **{post.relevance_score}/10** · 重要性 **{post.importance_score}/10**",
+            f"相关性 **{post.relevance_score}/10** · 创新性 **{post.innovation_score}/10**",
         )
 
     @staticmethod
@@ -268,13 +268,13 @@ class ReportWriter:
     @staticmethod
     def _blog_html(post: TechBlogPost) -> str:
         return ReportWriter._feed_html(
-            post, f"相关 {post.relevance_score}/10 · 技术深度 {post.technical_depth_score}/10"
+            post, f"相关 {post.relevance_score}/10 · 创新 {post.innovation_score}/10"
         )
 
     @staticmethod
     def _news_html(post: TechNewsPost) -> str:
         return ReportWriter._feed_html(
-            post, f"相关 {post.relevance_score}/10 · 重要性 {post.importance_score}/10"
+            post, f"相关 {post.relevance_score}/10 · 创新 {post.innovation_score}/10"
         )
 
     @staticmethod
