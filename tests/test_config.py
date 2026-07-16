@@ -1,100 +1,119 @@
+import pytest
+
 from repo_courier.config import load_config
+
+CONFIG_PATH = __file__.replace("tests/test_config.py", "config/config.yaml")
+
+
+def test_default_config_loads_five_unique_rss_channels() -> None:
+    config = load_config(CONFIG_PATH)
+
+    assert config.github.enabled is True
+    assert list(config.rss.channels) == ["news", "blogs", "academic", "products", "security"]
+    assert all(channel.enabled for channel in config.rss.channels.values())
+    assert config.rss.defaults.max_items_per_source > 0
+    assert config.rss.defaults.llm_candidates > 0
+    assert 0 < config.rss.defaults.top_k <= config.rss.defaults.llm_candidates
+    assert config.rss.defaults.max_input_tokens > 0
+    urls = [
+        source.url
+        for channel in config.rss.channels.values()
+        for source in channel.sources
+    ]
+    assert len(urls) == 17
+    assert len(urls) == len(set(urls))
+    assert config.rss.channels["academic"].sources[0].url.endswith("cs.AI+cs.CL+cs.CV+cs.LG")
+    assert config.report.product_display_names["openai-codex"] == "OpenAI Codex"
 
 
 def test_environment_overrides_yaml(tmp_path, monkeypatch) -> None:
     config_file = tmp_path / "config.yaml"
     config_file.write_text(
-        "github:\n  limit: 5\nsummary:\n  model: yaml-model\n  api_key: yaml-secret\n",
+        "repo_llm:\n  model: yaml-model\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("AI_MODEL", "env-model")
-    monkeypatch.setenv("AI_API_KEY", "env-secret")
-    monkeypatch.setenv("ACADEMIC_API_KEY", "academic-env-secret")
-    monkeypatch.setenv("FEISHU_WEBHOOK", "https://example.invalid/hook")
-    monkeypatch.setenv("REPO_COURIER_INTERESTS", "rust, cli, database")
+    monkeypatch.setenv("REPO_LLM_MODEL", "shared-model")
+    monkeypatch.setenv("REPO_LLM_API_KEY", "shared-secret")
+    monkeypatch.setenv("REPO_LLM_BASE_URL", "https://example.com/v1/chat/completions")
 
     config = load_config(config_file)
 
-    assert config.github.limit == 5
-    assert config.summary.model == "env-model"
-    assert config.summary.api_key == "env-secret"
-    assert config.academic.api_key == "academic-env-secret"
-    assert config.push.feishu_webhook.endswith("/hook")
-    assert config.profile.interests == ["rust", "cli", "database"]
+    assert config.repo_llm.model == "shared-model"
+    assert config.repo_llm.api_key == "shared-secret"
+    assert config.repo_llm.base_url == "https://example.com/v1/chat/completions"
 
 
-def test_academic_source_config(tmp_path) -> None:
+def test_duplicate_rss_urls_keep_first_occurrence(tmp_path) -> None:
     config_file = tmp_path / "config.yaml"
     config_file.write_text(
-        "academic:\n  enabled: true\n  base_url: https://www.dmxapi.cn/v1\n"
-        "  api_key: yaml-secret\n  sources:\n    arxiv:\n      final_picks: 4\n",
+        """
+rss:
+  channels:
+    one:
+      title: One
+      prompt: repo_courier.prompts.news:build_messages
+      sources:
+        - {id: first, name: First, url: 'https://example.com/feed/'}
+    two:
+      title: Two
+      prompt: repo_courier.prompts.blogs:build_messages
+      sources:
+        - {id: duplicate, name: Duplicate, url: 'https://EXAMPLE.com/feed'}
+        - {id: second, name: Second, url: 'https://example.com/other'}
+""",
         encoding="utf-8",
     )
 
     config = load_config(config_file)
 
-    assert config.academic.enabled is True
-    assert config.academic.base_url == "https://www.dmxapi.cn/v1"
-    assert config.academic.model == ""
-    assert config.academic.verify_ssl is True
-    assert config.academic.api_key == ""
-    assert config.academic.arxiv.final_picks == 4
-    assert config.academic.arxiv.candidate_limit == 500
-    assert config.academic.arxiv.page_size == 100
+    assert [source.source_id for source in config.rss.channels["one"].sources] == ["first"]
+    assert [source.source_id for source in config.rss.channels["two"].sources] == ["second"]
 
 
-def test_academic_is_opt_in_by_default(tmp_path) -> None:
-    config_file = tmp_path / "config.yaml"
-    config_file.write_text("profile:\n  daily_picks: 3\n", encoding="utf-8")
-
-    config = load_config(config_file)
-
-    assert config.academic.enabled is False
-    assert config.academic.verify_ssl is True
-
-
-def test_legacy_lowercase_academic_key_is_still_supported(tmp_path, monkeypatch) -> None:
-    config_file = tmp_path / "config.yaml"
-    config_file.write_text("academic:\n  enabled: true\n", encoding="utf-8")
-    monkeypatch.setenv("academic_api_key", "legacy-secret")
-
-    assert load_config(config_file).academic.api_key == "legacy-secret"
-
-
-def test_academic_numeric_strings_are_coerced_and_expressions_are_rejected(tmp_path) -> None:
+def test_invalid_prompt_and_numeric_limits_fail_fast(tmp_path) -> None:
     config_file = tmp_path / "config.yaml"
     config_file.write_text(
-        'academic:\n  sources:\n    arxiv:\n      max_analysis_workers: "50"\n',
+        """
+rss:
+  defaults: {top_k: nope}
+  channels:
+    news:
+      title: News
+      prompt: missing.module:builder
+""",
         encoding="utf-8",
     )
-    assert load_config(config_file).academic.arxiv.max_analysis_workers == 50
 
-    config_file.write_text(
-        "academic:\n  sources:\n    arxiv:\n      max_analysis_workers: final_picks * 2\n",
-        encoding="utf-8",
-    )
-    try:
+    with pytest.raises(ValueError):
         load_config(config_file)
-    except ValueError as exc:
-        assert "不能使用表达式" in str(exc)
-    else:
-        raise AssertionError("表达式形式的 max_analysis_workers 应被拒绝")
+
+    config_file.write_text(
+        """
+rss:
+  channels:
+    news:
+      title: News
+      enabled: true
+      prompt: missing.module:builder
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="无法加载 Prompt"):
+        load_config(config_file)
 
 
-def test_technology_feed_sources_are_loaded_separately(tmp_path) -> None:
+def test_disabled_channel_does_not_import_prompt(tmp_path) -> None:
     config_file = tmp_path / "config.yaml"
     config_file.write_text(
-        "tech_blog:\n  enabled: true\n  final_picks: 5\n  sources:\n"
-        "    - id: openai\n      name: OpenAI News\n      url: https://openai.com/news/rss.xml\n"
-        "tech_news:\n  enabled: true\n  final_picks: 3\n  sources:\n"
-        "    - id: apple\n      name: Apple Newsroom\n"
-        "      url: https://www.apple.com/newsroom/rss-feed.rss\n",
+        """
+rss:
+  channels:
+    future:
+      title: Future
+      enabled: false
+      prompt: not.installed.yet:build_messages
+""",
         encoding="utf-8",
     )
 
-    config = load_config(config_file)
-
-    assert config.tech_blog.final_picks == 5
-    assert config.tech_blog.sources[0].source_id == "openai"
-    assert config.tech_news.final_picks == 3
-    assert config.tech_news.sources[0].name == "Apple Newsroom"
+    assert load_config(config_file).rss.channels["future"].enabled is False

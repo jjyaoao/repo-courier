@@ -6,16 +6,19 @@ import re
 
 import httpx
 
-from .config import SummaryConfig
+from .config import RepoLlmConfig
 from .models import Repository
 
 logger = logging.getLogger(__name__)
 
 
 class Summarizer:
-    def __init__(self, config: SummaryConfig, client: httpx.Client | None = None) -> None:
+    def __init__(self, config: RepoLlmConfig, client: httpx.Client | None = None) -> None:
         self.config = config
-        self.client = client or httpx.Client(timeout=config.timeout_seconds)
+        self.client = client or httpx.Client(
+            timeout=config.timeout_seconds,
+            verify=config.verify_ssl,
+        )
 
     def summarize(self, repositories: list[Repository]) -> list[Repository]:
         if self.config.enabled and self.config.api_key and self.config.model:
@@ -48,7 +51,7 @@ class Summarizer:
             "category, risk_note；highlights 和 use_cases 是各 1-3 条的字符串数组。"
         )
         response = self.client.post(
-            f"{self.config.base_url.rstrip('/')}/chat/completions",
+            self.config.base_url,
             headers={"Authorization": f"Bearer {self.config.api_key}"},
             json={
                 "model": self.config.model,

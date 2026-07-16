@@ -63,37 +63,14 @@ class Repository:
 
 
 @dataclass(slots=True)
-class AcademicPaper:
-    source: str
-    source_id: str
-    title: str
-    url: str
-    abstract: str = ""
-    authors: list[str] = field(default_factory=list)
-    submitted_at: datetime | None = None
-    introduction: str = ""
-    rule_score: int = 0
-    relevance_score: int = 0
-    innovation_score: int = 0
-    research_motivation: str = ""
-    core_contributions: str = ""
-    combined_score: float = 0.0
-    analysis_status: str = "pending"
-    pick_rank: int | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        data = asdict(self)
-        data["submitted_at"] = self.submitted_at.isoformat() if self.submitted_at else None
-        return data
-
-
-@dataclass(slots=True)
-class TechBlogPost:
+class RssItem:
+    channel_id: str
     source_id: str
     source_name: str
+    entry_id: str
     title: str
     url: str
-    summary: str = ""
+    feed_summary: str = ""
     content_excerpt: str = ""
     authors: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
@@ -104,6 +81,7 @@ class TechBlogPost:
     relevance_score: int = 0
     innovation_score: int = 0
     final_score: float = 0.0
+    summary: str = ""
     recommendation_reason: str = ""
     analysis_status: str = "pending"
     pick_rank: int | None = None
@@ -115,39 +93,26 @@ class TechBlogPost:
 
 
 @dataclass(slots=True)
-class TechNewsPost:
-    source_id: str
-    source_name: str
+class ChannelRun:
+    channel_id: str
     title: str
-    url: str
-    summary: str = ""
-    content_excerpt: str = ""
-    authors: list[str] = field(default_factory=list)
-    tags: list[str] = field(default_factory=list)
-    published_at: datetime | None = None
-    matched_keywords: list[str] = field(default_factory=list)
-    excluded_keywords: list[str] = field(default_factory=list)
-    rule_score: int = 0
-    relevance_score: int = 0
-    innovation_score: int = 0
-    final_score: float = 0.0
-    recommendation_reason: str = ""
-    analysis_status: str = "pending"
-    pick_rank: int | None = None
+    items: list[RssItem]
+    scanned_count: int
+    llm_candidate_count: int
+    errors: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        data = asdict(self)
-        data["published_at"] = self.published_at.isoformat() if self.published_at else None
-        return data
+        return {
+            "title": self.title,
+            "items": [item.to_dict() for item in self.items],
+            "scanned_count": self.scanned_count,
+            "llm_candidate_count": self.llm_candidate_count,
+            "errors": self.errors,
+        }
 
 
 @dataclass(slots=True)
 class DailyReport:
     repositories: list[Repository] = field(default_factory=list)
-    papers: list[AcademicPaper] = field(default_factory=list)
-    tech_blogs: list[TechBlogPost] = field(default_factory=list)
-    tech_news: list[TechNewsPost] = field(default_factory=list)
-    academic_window: dict[str, str] = field(default_factory=dict)
-    academic_error: str = ""
-    tech_blog_errors: dict[str, str] = field(default_factory=dict)
-    tech_news_errors: dict[str, str] = field(default_factory=dict)
+    rss_channels: dict[str, ChannelRun] = field(default_factory=dict)
+    rss_window: dict[str, str] = field(default_factory=dict)

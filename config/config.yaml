@@ -1,25 +1,13 @@
 github:
-  # 可选：python、go、rust、javascript 等；留空表示全部语言
+  enabled: true
   language: ""
-  # daily / weekly / monthly
   since: daily
   spoken_language_code: ""
-  # 多抓一些候选，再从中选出最适合你的 3 个
   limit: 20
   include_readme: true
   readme_max_chars: 4000
 
-summary:
-  enabled: true
-  # 密钥和模型推荐通过 AI_API_KEY、AI_MODEL 环境变量传入
-  base_url: https://api.openai.com/v1
-  model: ""
-  language: zh-CN
-  timeout_seconds: 90
-
 profile:
-  # 这是 RepoCourier 唯一需要你认真填写的配置。
-  # 推荐使用仓库描述和 Topics 中常见的英文关键词。
   interests:
     - agent
     - llm
@@ -30,86 +18,108 @@ profile:
     - tutorial collection
   daily_picks: 3
 
-academic:
-  # 可选扩展：默认关闭，避免改变 RepoCourier 的 GitHub 三选主流程。
+repo_llm:
   enabled: true
-  # Academic 密钥只通过 ACADEMIC_API_KEY 环境变量导入。
-  # 填写完整的 Chat Completions 接口地址，代码不会再追加路径。
-  base_url: https://api.openai.com/v1/chat/completions
-  model: ""
+  base_url: https://www.dmxapi.cn/v1/chat/completions
+  model: "glm-5"
   verify_ssl: true
-  sources:
-    arxiv:
+  timeout_seconds: 90
+
+rss:
+  defaults:
+    max_items_per_source: 6
+    llm_candidates: 6
+    top_k: 3
+    max_input_tokens: 10000
+    token_encoding: cl100k_base
+    max_analysis_workers: 10
+  channels:
+    news:
+      title: 科技新闻
       enabled: true
-      # 最多拉取的候选数；规则初筛数量固定为 final_picks 的 2 倍
-      candidate_limit: 50
-      page_size: 10
-      request_interval_seconds: 3.0
-      final_picks: 3
-      introduction_max_chars: 12000
-      max_analysis_workers: 50
-
-tech_blog:
-  enabled: true
-  final_picks: 5
-  max_analysis_workers: 10
-  content_max_chars: 6000
-  sources:
-    - id: openai
-      name: OpenAI News
-      url: https://openai.com/news/rss.xml
-    - id: google
-      name: Google The Keyword
-      url: https://blog.google/rss/
-    - id: microsoft-research
-      name: Microsoft Research
-      url: https://www.microsoft.com/en-us/research/feed/
-    - id: aws-machine-learning
-      name: AWS Machine Learning
-      url: https://aws.amazon.com/blogs/machine-learning/feed/
-    - id: meta-engineering
-      name: Meta Engineering
-      url: https://engineering.fb.com/feed/
-    - id: github
-      name: GitHub Blog
-      url: https://github.blog/feed/
-    - id: cloudflare
-      name: Cloudflare Blog
-      url: https://blog.cloudflare.com/rss/
-    - id: nvidia-developer
-      name: NVIDIA Developer Blog
-      url: https://developer.nvidia.com/blog/feed/
-    - id: netflix-techblog
-      name: Netflix TechBlog
-      url: https://netflixtechblog.com/feed
-    - id: salesforce-engineering
-      name: Salesforce Engineering
-      url: https://engineering.salesforce.com/feed/
-
-tech_news:
-  enabled: true
-  final_picks: 3
-  max_analysis_workers: 6
-  content_max_chars: 6000
-  sources:
-    - id: microsoft
-      name: Microsoft Official Blog
-      url: https://blogs.microsoft.com/feed/
-    - id: aws-news
-      name: AWS News Blog
-      url: https://aws.amazon.com/blogs/aws/feed/
-    - id: apple-newsroom
-      name: Apple Newsroom
-      url: https://www.apple.com/newsroom/rss-feed.rss
-    - id: nvidia
-      name: NVIDIA Blog
-      url: https://blogs.nvidia.com/feed/
+      prompt: repo_courier.prompts.news:build_messages
+      sources:
+        - id: mit-technology-review
+          name: MIT Technology Review
+          url: https://www.technologyreview.com/feed/
+        - id: the-verge
+          name: The Verge
+          url: https://www.theverge.com/rss/index.xml
+        - id: wired
+          name: WIRED
+          url: https://www.wired.com/feed/rss
+        - id: ars-technica
+          name: Ars Technica
+          url: https://feeds.arstechnica.com/arstechnica/index
+    blogs:
+      title: 大厂博客
+      enabled: true
+      prompt: repo_courier.prompts.blogs:build_messages
+      sources:
+        - id: openai
+          name: OpenAI News
+          url: https://openai.com/news/rss.xml
+        - id: google-deepmind
+          name: Google DeepMind
+          url: https://deepmind.google/blog/rss.xml
+        - id: google-ai
+          name: Google AI
+          url: https://blog.google/innovation-and-ai/technology/ai/rss/
+        - id: hugging-face
+          name: Hugging Face Blog
+          url: https://huggingface.co/blog/feed.xml
+    academic:
+      title: 学术论文
+      enabled: true
+      prompt: repo_courier.prompts.academic:build_messages
+      sources:
+        - id: arxiv-ai
+          name: arXiv AI · NLP · CV · ML
+          url: https://rss.arxiv.org/rss/cs.AI+cs.CL+cs.CV+cs.LG
+    products:
+      title: 产品更新
+      enabled: true
+      prompt: repo_courier.prompts.products:build_messages
+      sources:
+        - id: gemini-cli
+          name: Gemini CLI Releases
+          url: https://github.com/google-gemini/gemini-cli/releases.atom
+        - id: openai-codex
+          name: OpenAI Codex Releases
+          url: https://github.com/openai/codex/releases.atom
+        - id: claude-code
+          name: Claude Code Releases
+          url: https://github.com/anthropics/claude-code/releases.atom
+        - id: openclaw
+          name: OpenClaw Releases
+          url: https://github.com/openclaw/openclaw/releases.atom
+    security:
+      title: 安全资讯
+      enabled: true
+      prompt: repo_courier.prompts.security:build_messages
+      sources:
+        - id: krebs-on-security
+          name: Krebs on Security
+          url: https://krebsonsecurity.com/feed/
+        - id: the-hacker-news
+          name: The Hacker News
+          url: https://feeds.feedburner.com/TheHackersNews
+        - id: google-security
+          name: Google Online Security Blog
+          url: https://feeds.feedburner.com/GoogleOnlineSecurityBlog
+        - id: anquanke
+          name: 安全客
+          url: https://api.anquanke.com/data/v1/rss
 
 report:
   output_dir: reports
   data_dir: data/history
-  title: RepoCourier · 个性化开源速递
+  title: RepoCourier · 个性化科技速递
+  product_display_names:
+    gemini-cli: Gemini CLI
+    openai-codex: OpenAI Codex
+    claude-code: Claude Code
+    openclaw: OpenClaw
 
 push:
   enabled: true
-  # Webhook/密钥全部使用环境变量，避免提交到仓库

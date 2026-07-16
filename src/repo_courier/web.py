@@ -20,7 +20,7 @@ from .runner import run
 logger = logging.getLogger(__name__)
 
 ASSET_DIR = Path(__file__).with_name("web_assets")
-DEFAULT_AI_BASE_URL = "https://api.openai.com/v1"
+DEFAULT_AI_BASE_URL = "https://api.openai.com/v1/chat/completions"
 SUPPORTED_LANGUAGES = {"", "python", "javascript", "typescript", "go", "rust", "java"}
 MAX_REQUEST_BYTES = 16 * 1024
 
@@ -88,11 +88,12 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
     config.profile.interests = payload.interests
     config.profile.daily_picks = 3
     config.github.language = payload.language
-    config.summary.enabled = bool(api_key and model)
-    config.summary.api_key = api_key
-    config.summary.base_url = base_url or DEFAULT_AI_BASE_URL
-    config.summary.model = model
-    config.academic.enabled = False
+    config.repo_llm.enabled = bool(api_key and model)
+    config.repo_llm.api_key = api_key
+    config.repo_llm.base_url = base_url or DEFAULT_AI_BASE_URL
+    config.repo_llm.model = model
+    for channel in config.rss.channels.values():
+        channel.enabled = False
     config.push.enabled = False
 
     with TemporaryDirectory(prefix="repo-courier-web-") as directory:
@@ -100,6 +101,7 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
             output_dir=str(Path(directory) / "reports"),
             data_dir=str(Path(directory) / "history"),
             title=config.report.title,
+            product_display_names=config.report.product_display_names,
         )
         result = run(config, dry_run=True)
 

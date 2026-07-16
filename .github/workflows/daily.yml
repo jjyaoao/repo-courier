@@ -1,4 +1,4 @@
-name: Daily GitHub Trending
+name: Daily RepoCourier
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: repo-courier-daily
@@ -28,10 +28,9 @@ jobs:
       - name: Generate and deliver report
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AI_API_KEY: ${{ secrets.AI_API_KEY }}
-          AI_BASE_URL: ${{ secrets.AI_BASE_URL }}
-          AI_MODEL: ${{ secrets.AI_MODEL }}
-          ACADEMIC_API_KEY: ${{ secrets.ACADEMIC_API_KEY }}
+          REPO_LLM_API_KEY: ${{ secrets.REPO_LLM_API_KEY }}
+          REPO_LLM_BASE_URL: ${{ secrets.REPO_LLM_BASE_URL }}
+          REPO_LLM_MODEL: ${{ secrets.REPO_LLM_MODEL }}
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
           SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
@@ -39,10 +38,3 @@ jobs:
           ONEBOT_TOKEN: ${{ secrets.ONEBOT_TOKEN }}
           ONEBOT_USER_ID: ${{ secrets.ONEBOT_USER_ID }}
         run: repo-courier --config config/config.yaml
-      - name: Commit generated reports
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add reports data/history
-          git diff --cached --quiet || git commit -m "chore: publish daily trending report"
-          git push

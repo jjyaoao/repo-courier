@@ -1,14 +1,8 @@
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 
 from repo_courier.config import ReportConfig
-from repo_courier.models import (
-    AcademicPaper,
-    DailyReport,
-    Repository,
-    TechBlogPost,
-    TechNewsPost,
-)
+from repo_courier.models import ChannelRun, DailyReport, Repository, RssItem
 from repo_courier.report import ReportWriter
 
 
@@ -19,110 +13,98 @@ def _repository() -> Repository:
         name="rocket",
         url="https://github.com/acme/rocket",
         description="Ship applications",
-        language="Python",
         stars=1_000,
         stars_today=100,
-        license="MIT",
         summary="一个快速的应用交付工具。",
-        highlights=["上手简单", "自动化能力强"],
-        use_cases=["持续交付"],
-        category="开发工具",
         relevance_score=82,
         recommendation="深挖",
-        why_for_you="命中你的关注词：developer tools。",
-        matched_interests=["developer tools"],
+        why_for_you="命中 developer tools。",
         pick_rank=1,
     )
 
 
-def test_writer_outputs_three_formats(tmp_path) -> None:
-    writer = ReportWriter(
-        ReportConfig(output_dir=str(tmp_path / "reports"), data_dir=str(tmp_path / "history"))
-    )
-    paths = writer.write(DailyReport(repositories=[_repository()]), date(2026, 7, 10))
-
-    assert set(paths) == {"markdown", "html", "json"}
-    assert "acme/rocket" in paths["markdown"].read_text(encoding="utf-8")
-    assert "为什么适合你" in paths["markdown"].read_text(encoding="utf-8")
-    assert "<!doctype html>" in paths["html"].read_text(encoding="utf-8")
-    payload = json.loads(paths["json"].read_text(encoding="utf-8"))
-    assert payload["repositories"][0]["full_name"] == "acme/rocket"
-
-
-def test_digest_is_short_and_contains_links() -> None:
-    digest = ReportWriter(ReportConfig()).digest(
-        DailyReport(repositories=[_repository()]), date(2026, 7, 10)
-    )
-    assert "acme/rocket" in digest
-    assert "https://github.com/acme/rocket" in digest
-
-
-def test_writer_merges_academic_only_at_report_layer(tmp_path) -> None:
-    paper = AcademicPaper(
-        source="arxiv",
-        source_id="2607.00001",
-        title="Agent Research",
-        url="https://arxiv.org/abs/2607.00001",
-        relevance_score=9,
-        innovation_score=8,
-        combined_score=12.8,
-        research_motivation="现有方法难以稳定完成复杂任务。",
-        core_contributions="提出新的智能体协作方法。",
-        pick_rank=1,
-    )
-    writer = ReportWriter(ReportConfig(output_dir=str(tmp_path / "reports")))
-
-    paths = writer.write(
-        DailyReport(repositories=[_repository()], papers=[paper]),
-        date(2026, 7, 12),
-    )
-
-    markdown = paths["markdown"].read_text(encoding="utf-8")
-    payload = json.loads(paths["json"].read_text(encoding="utf-8"))
-    assert "## GitHub 推荐" in markdown
-    assert "## 学术论文" in markdown
-    assert "研究动机" in markdown
-    assert "核心贡献" in markdown
-    assert payload["repositories"][0]["full_name"] == "acme/rocket"
-    assert payload["academic"]["papers"][0]["source_id"] == "2607.00001"
-
-
-def test_writer_keeps_technology_blog_and_news_as_separate_sections(tmp_path) -> None:
-    blog = TechBlogPost(
-        source_id="cloudflare:1",
-        source_name="Cloudflare Blog",
-        title="Agent infrastructure",
-        url="https://example.com/blog",
-        summary="技术博客摘要",
+def _channel(channel_id: str, title: str) -> ChannelRun:
+    item = RssItem(
+        channel_id=channel_id,
+        source_id="source",
+        source_name="Source",
+        entry_id=f"{channel_id}-1",
+        title=f"{title}内容",
+        url=f"https://example.com/{channel_id}",
+        published_at=datetime(2026, 7, 12, 1, tzinfo=timezone.utc),
         matched_keywords=["agent"],
         relevance_score=8,
         innovation_score=7,
         final_score=69.6,
-        recommendation_reason="包含具体工程实现。",
+        summary="中文内容概要。",
+        recommendation_reason="值得进一步阅读。",
+        analysis_status="ai",
         pick_rank=1,
     )
-    news = TechNewsPost(
-        source_id="apple:1",
-        source_name="Apple Newsroom",
-        title="AI product launch",
-        url="https://example.com/news",
-        summary="科技新闻摘要",
-        matched_keywords=["agent"],
-        relevance_score=8,
-        innovation_score=9,
-        final_score=74.4,
-        recommendation_reason="属于重要产品发布。",
-        pick_rank=1,
+    return ChannelRun(channel_id, title, [item], 10, 10)
+
+
+def test_writer_outputs_github_and_five_dynamic_rss_sections(tmp_path) -> None:
+    channels = dict(
+        [
+            ("news", _channel("news", "科技新闻")),
+            ("blogs", _channel("blogs", "大厂博客")),
+            ("academic", _channel("academic", "学术论文")),
+            ("products", _channel("products", "产品更新")),
+            ("security", _channel("security", "安全资讯")),
+        ]
     )
     writer = ReportWriter(ReportConfig(output_dir=str(tmp_path / "reports")))
 
     paths = writer.write(
-        DailyReport(tech_blogs=[blog], tech_news=[news]), date(2026, 7, 12)
+        DailyReport(repositories=[_repository()], rss_channels=channels),
+        date(2026, 7, 12),
     )
 
+    assert set(paths) == {"markdown", "html", "json"}
     markdown = paths["markdown"].read_text(encoding="utf-8")
+    positions = [markdown.index(f"## {channel.title}") for channel in channels.values()]
+    assert positions == sorted(positions)
+    assert "acme/rocket" in markdown
+    assert "为什么适合你" in markdown
+    assert "<!doctype html>" in paths["html"].read_text(encoding="utf-8")
     payload = json.loads(paths["json"].read_text(encoding="utf-8"))
-    assert "## 科技技术博客" in markdown
-    assert "## 科技新闻发布" in markdown
-    assert payload["tech_blogs"]["posts"][0]["source_id"] == "cloudflare:1"
-    assert payload["tech_news"]["posts"][0]["source_id"] == "apple:1"
+    assert payload["repositories"][0]["full_name"] == "acme/rocket"
+    assert list(payload["rss_channels"]) == list(channels)
+    assert payload["rss_channels"]["academic"]["items"][0]["channel_id"] == "academic"
+
+
+def test_digest_contains_github_and_rss_links() -> None:
+    report = DailyReport(
+        repositories=[_repository()],
+        rss_channels={"news": _channel("news", "科技新闻")},
+    )
+    digest = ReportWriter(ReportConfig()).digest(report, date(2026, 7, 10))
+
+    assert "https://github.com/acme/rocket" in digest
+    assert "https://example.com/news" in digest
+    assert "科技新闻" in digest
+
+
+def test_product_titles_include_source_product_in_markdown_and_html(tmp_path) -> None:
+    products = _channel("products", "产品更新")
+    item = products.items[0]
+    item.source_id = "claude-code"
+    item.source_name = "Claude Code Releases"
+    item.title = "v2.1.210"
+    writer = ReportWriter(
+        ReportConfig(
+            output_dir=str(tmp_path / "reports"),
+            product_display_names={"claude-code": "Claude 配置名称"},
+        )
+    )
+
+    paths = writer.write(
+        DailyReport(rss_channels={"products": products}),
+        date(2026, 7, 15),
+    )
+
+    assert "[Claude 配置名称：v2.1.210]" in paths["markdown"].read_text(encoding="utf-8")
+    assert "Claude 配置名称：v2.1.210" in paths["html"].read_text(encoding="utf-8")
+    payload = json.loads(paths["json"].read_text(encoding="utf-8"))
+    assert payload["rss_channels"]["products"]["items"][0]["title"] == "v2.1.210"

@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import importlib
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urldefrag, urlsplit, urlunsplit
 
+import tiktoken
 import yaml
 
 
 @dataclass(slots=True)
 class GitHubConfig:
+    enabled: bool = True
     token: str = ""
     language: str = ""
     spoken_language_code: str = ""
@@ -20,12 +24,12 @@ class GitHubConfig:
 
 
 @dataclass(slots=True)
-class SummaryConfig:
+class RepoLlmConfig:
     enabled: bool = True
     api_key: str = ""
-    base_url: str = "https://api.openai.com/v1"
+    base_url: str = "https://api.openai.com/v1/chat/completions"
     model: str = ""
-    language: str = "zh-CN"
+    verify_ssl: bool = True
     timeout_seconds: float = 90.0
 
 
@@ -40,50 +44,36 @@ class ProfileConfig:
     daily_picks: int = 3
 
 
-@dataclass(slots=True)
-class ArxivConfig:
-    enabled: bool = True
-    candidate_limit: int = 500
-    page_size: int = 100
-    request_interval_seconds: float = 3.0
-    final_picks: int = 3
-    introduction_max_chars: int = 12000
-    max_analysis_workers: int = 50
-
-
-@dataclass(slots=True)
-class AcademicConfig:
-    enabled: bool = False
-    api_key: str = ""
-    base_url: str = "https://api.openai.com/v1/chat/completions"
-    model: str = ""
-    verify_ssl: bool = True
-    arxiv: ArxivConfig = field(default_factory=ArxivConfig)
-
-
 @dataclass(frozen=True, slots=True)
-class FeedSourceConfig:
+class RssSourceConfig:
     source_id: str
     name: str
     url: str
 
 
 @dataclass(slots=True)
-class TechBlogConfig:
-    enabled: bool = False
-    final_picks: int = 5
+class RssDefaultsConfig:
+    max_items_per_source: int = 10
+    llm_candidates: int = 10
+    top_k: int = 5
+    max_input_tokens: int = 1000
+    token_encoding: str = "cl100k_base"
     max_analysis_workers: int = 10
-    content_max_chars: int = 6000
-    sources: list[FeedSourceConfig] = field(default_factory=list)
 
 
 @dataclass(slots=True)
-class TechNewsConfig:
-    enabled: bool = False
-    final_picks: int = 3
-    max_analysis_workers: int = 6
-    content_max_chars: int = 6000
-    sources: list[FeedSourceConfig] = field(default_factory=list)
+class RssChannelConfig:
+    channel_id: str
+    title: str
+    prompt: str
+    enabled: bool = True
+    sources: list[RssSourceConfig] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class RssConfig:
+    defaults: RssDefaultsConfig = field(default_factory=RssDefaultsConfig)
+    channels: dict[str, RssChannelConfig] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -91,6 +81,7 @@ class ReportConfig:
     output_dir: str = "reports"
     data_dir: str = "data/history"
     title: str = "RepoCourier · GitHub Trending 日报"
+    product_display_names: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -107,18 +98,11 @@ class PushConfig:
 @dataclass(slots=True)
 class AppConfig:
     github: GitHubConfig = field(default_factory=GitHubConfig)
-    summary: SummaryConfig = field(default_factory=SummaryConfig)
+    repo_llm: RepoLlmConfig = field(default_factory=RepoLlmConfig)
     profile: ProfileConfig = field(default_factory=ProfileConfig)
-    academic: AcademicConfig = field(default_factory=AcademicConfig)
-    tech_blog: TechBlogConfig = field(default_factory=TechBlogConfig)
-    tech_news: TechNewsConfig = field(default_factory=TechNewsConfig)
+    rss: RssConfig = field(default_factory=RssConfig)
     report: ReportConfig = field(default_factory=ReportConfig)
     push: PushConfig = field(default_factory=PushConfig)
-
-
-def _section(data: dict[str, Any], name: str) -> dict[str, Any]:
-    value = data.get(name, {})
-    return value if isinstance(value, dict) else {}
 
 
 def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
@@ -131,45 +115,18 @@ def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
         data = loaded
 
     github = GitHubConfig(**_known(GitHubConfig, _section(data, "github")))
-    summary_values = _known(SummaryConfig, _section(data, "summary"))
-    summary_values.pop("api_key", None)
-    summary = SummaryConfig(**summary_values)
+    repo_llm_values = _known(RepoLlmConfig, _section(data, "repo_llm"))
+    repo_llm_values.pop("api_key", None)
+    repo_llm = RepoLlmConfig(**repo_llm_values)
     profile = ProfileConfig(**_known(ProfileConfig, _section(data, "profile")))
-    academic_data = _section(data, "academic")
-    sources_data = _section(academic_data, "sources")
-    arxiv_values = _known(ArxivConfig, _section(sources_data, "arxiv"))
-    for name in (
-        "candidate_limit",
-        "page_size",
-        "final_picks",
-        "introduction_max_chars",
-        "max_analysis_workers",
-    ):
-        if name in arxiv_values:
-            arxiv_values[name] = _positive_int(arxiv_values[name], f"academic.sources.arxiv.{name}")
-    if "request_interval_seconds" in arxiv_values:
-        arxiv_values["request_interval_seconds"] = _non_negative_float(
-            arxiv_values["request_interval_seconds"],
-            "academic.sources.arxiv.request_interval_seconds",
-        )
-    arxiv = ArxivConfig(**arxiv_values)
-    academic_values = _known(AcademicConfig, academic_data)
-    academic_values.pop("api_key", None)
-    academic_values.pop("arxiv", None)
-    academic = AcademicConfig(**academic_values, arxiv=arxiv)
-    tech_blog = _feed_config(TechBlogConfig, _section(data, "tech_blog"), "tech_blog")
-    tech_news = _feed_config(TechNewsConfig, _section(data, "tech_news"), "tech_news")
+    rss = _rss_config(_section(data, "rss"))
     report = ReportConfig(**_known(ReportConfig, _section(data, "report")))
     push = PushConfig(**_known(PushConfig, _section(data, "push")))
 
     github.token = _env("GITHUB_TOKEN", github.token)
-    summary.api_key = os.getenv("AI_API_KEY", "")
-    summary.base_url = _env("AI_BASE_URL", summary.base_url)
-    summary.model = _env("AI_MODEL", summary.model)
-    academic.api_key = os.getenv(
-        "ACADEMIC_API_KEY",
-        os.getenv("academic_api_key", ""),  # Backward compatibility with pre-0.1 configs.
-    )
+    repo_llm.api_key = os.getenv("REPO_LLM_API_KEY", "")
+    repo_llm.base_url = _env("REPO_LLM_BASE_URL", repo_llm.base_url)
+    repo_llm.model = _env("REPO_LLM_MODEL", repo_llm.model)
     push.feishu_webhook = _env("FEISHU_WEBHOOK", push.feishu_webhook)
     push.wecom_webhook = _env("WECOM_WEBHOOK", push.wecom_webhook)
     push.serverchan_sendkey = _env("SERVERCHAN_SENDKEY", push.serverchan_sendkey)
@@ -181,46 +138,106 @@ def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
         profile.interests = [item.strip() for item in interests.split(",") if item.strip()]
     return AppConfig(
         github=github,
-        summary=summary,
+        repo_llm=repo_llm,
         profile=profile,
-        academic=academic,
-        tech_blog=tech_blog,
-        tech_news=tech_news,
+        rss=rss,
         report=report,
         push=push,
     )
 
 
-def _known(cls: type[Any], values: dict[str, Any]) -> dict[str, Any]:
-    fields = cls.__dataclass_fields__.keys()
-    return {key: value for key, value in values.items() if key in fields}
+def _rss_config(values: dict[str, Any]) -> RssConfig:
+    defaults_values = _known(RssDefaultsConfig, _section(values, "defaults"))
+    for name in (
+        "max_items_per_source",
+        "llm_candidates",
+        "top_k",
+        "max_input_tokens",
+        "max_analysis_workers",
+    ):
+        if name in defaults_values:
+            defaults_values[name] = _positive_int(defaults_values[name], f"rss.defaults.{name}")
+    defaults = RssDefaultsConfig(**defaults_values)
+    try:
+        tiktoken.get_encoding(defaults.token_encoding)
+    except ValueError as exc:
+        raise ValueError(f"未知的 Token encoding: {defaults.token_encoding}") from exc
+
+    raw_channels = values.get("channels", {})
+    if not isinstance(raw_channels, dict):
+        raise ValueError("配置 rss.channels 必须是对象")
+    channels: dict[str, RssChannelConfig] = {}
+    seen_urls: set[str] = set()
+    for raw_id, raw_channel in raw_channels.items():
+        channel_id = str(raw_id).strip()
+        if not channel_id or not isinstance(raw_channel, dict):
+            raise ValueError(f"配置 rss.channels.{raw_id} 必须是对象")
+        title = str(raw_channel.get("title") or "").strip()
+        prompt = str(raw_channel.get("prompt") or "").strip()
+        enabled = raw_channel.get("enabled", True)
+        if not title or not prompt or not isinstance(enabled, bool):
+            raise ValueError(
+                f"配置 rss.channels.{channel_id} 必须包含 title、prompt 和布尔 enabled"
+            )
+        if enabled:
+            _validate_prompt(prompt, channel_id)
+        sources = _rss_sources(raw_channel.get("sources", []), channel_id, seen_urls)
+        channels[channel_id] = RssChannelConfig(channel_id, title, prompt, enabled, sources)
+    return RssConfig(defaults=defaults, channels=channels)
 
 
-def _feed_config(
-    cls: type[TechBlogConfig] | type[TechNewsConfig],
-    values: dict[str, Any],
-    section_name: str,
-) -> TechBlogConfig | TechNewsConfig:
-    known = _known(cls, values)
-    raw_sources = known.pop("sources", [])
+def _rss_sources(
+    raw_sources: object, channel_id: str, seen_urls: set[str]
+) -> list[RssSourceConfig]:
     if not isinstance(raw_sources, list):
-        raise ValueError(f"配置 {section_name}.sources 必须是数组")
-    sources: list[FeedSourceConfig] = []
+        raise ValueError(f"配置 rss.channels.{channel_id}.sources 必须是数组")
+    sources: list[RssSourceConfig] = []
     for index, raw in enumerate(raw_sources):
         if not isinstance(raw, dict):
-            raise ValueError(f"配置 {section_name}.sources[{index}] 必须是对象")
+            raise ValueError(f"配置 rss.channels.{channel_id}.sources[{index}] 必须是对象")
         source_id = str(raw.get("id") or raw.get("source_id") or "").strip()
         name = str(raw.get("name") or "").strip()
         url = str(raw.get("url") or "").strip()
         if not source_id or not name or not url:
             raise ValueError(
-                f"配置 {section_name}.sources[{index}] 必须包含 id、name、url"
+                f"配置 rss.channels.{channel_id}.sources[{index}] 必须包含 id、name、url"
             )
-        sources.append(FeedSourceConfig(source_id, name, url))
-    for name in ("final_picks", "max_analysis_workers", "content_max_chars"):
-        if name in known:
-            known[name] = _positive_int(known[name], f"{section_name}.{name}")
-    return cls(**known, sources=sources)
+        normalized = _normalized_url(url)
+        if normalized in seen_urls:
+            continue
+        seen_urls.add(normalized)
+        sources.append(RssSourceConfig(source_id, name, url))
+    return sources
+
+
+def _validate_prompt(path: str, channel_id: str) -> None:
+    module_name, separator, function_name = path.partition(":")
+    if not separator or not module_name or not function_name:
+        raise ValueError(f"专题 {channel_id} 的 prompt 必须使用 module:function 格式")
+    try:
+        function = getattr(importlib.import_module(module_name), function_name)
+    except (ImportError, AttributeError) as exc:
+        raise ValueError(f"专题 {channel_id} 无法加载 Prompt: {path}") from exc
+    if not callable(function):
+        raise ValueError(f"专题 {channel_id} 的 Prompt 不是可调用函数: {path}")
+
+
+def _normalized_url(url: str) -> str:
+    clean = urldefrag(url.strip())[0]
+    parts = urlsplit(clean)
+    return urlunsplit(
+        (parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip("/"), parts.query, "")
+    )
+
+
+def _section(data: dict[str, Any], name: str) -> dict[str, Any]:
+    value = data.get(name, {})
+    return value if isinstance(value, dict) else {}
+
+
+def _known(cls: type[Any], values: dict[str, Any]) -> dict[str, Any]:
+    fields = cls.__dataclass_fields__.keys()
+    return {key: value for key, value in values.items() if key in fields}
 
 
 def _env(name: str, default: str) -> str:
@@ -233,21 +250,7 @@ def _positive_int(value: object, name: str) -> int:
     try:
         parsed = int(value)
     except (TypeError, ValueError) as exc:
-        raise ValueError(
-            f"配置 {name} 必须是正整数，不能使用表达式，当前值: {value!r}"
-        ) from exc
+        raise ValueError(f"配置 {name} 必须是正整数，当前值: {value!r}") from exc
     if parsed <= 0 or str(parsed) != str(value).strip():
         raise ValueError(f"配置 {name} 必须是正整数，当前值: {value!r}")
-    return parsed
-
-
-def _non_negative_float(value: object, name: str) -> float:
-    if isinstance(value, bool):
-        raise ValueError(f"配置 {name} 必须是非负数，当前值: {value!r}")
-    try:
-        parsed = float(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"配置 {name} 必须是非负数，当前值: {value!r}") from exc
-    if parsed < 0:
-        raise ValueError(f"配置 {name} 必须是非负数，当前值: {value!r}")
     return parsed
