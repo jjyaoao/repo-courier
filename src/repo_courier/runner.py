@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from .academic import AcademicPipeline
-from .academic.base import BEIJING, SearchWindow
 from .config import AppConfig
-from .feeds import TechBlogPipeline, TechNewsPipeline
+from .feeds import BEIJING, RssPipeline, SearchWindow
 from .github import GitHubClient
-from .models import AcademicPaper, DailyReport, Repository, TechBlogPost, TechNewsPost
+from .models import ChannelRun, DailyReport, Repository
 from .personalize import Personalizer
 from .pushers import PushResult, configured_pushers
 from .report import ReportWriter
@@ -24,16 +22,12 @@ logger = logging.getLogger(__name__)
 @dataclass(slots=True)
 class RunResult:
     repositories: list[Repository]
-    papers: list[AcademicPaper]
-    tech_blogs: list[TechBlogPost]
-    tech_news: list[TechNewsPost]
+    rss_channels: dict[str, ChannelRun]
     scanned_count: int
-    academic_scanned_count: int
-    tech_blog_scanned_count: int
-    tech_news_scanned_count: int
     report_paths: dict[str, Path]
     history_path: Path | None
     push_results: list[PushResult]
+    ran_github: bool
 
 
 def run(
@@ -41,19 +35,26 @@ def run(
     *,
     day: date | None = None,
     dry_run: bool = False,
-    academic_only: bool = False,
+    channels: list[str] | None = None,
 ) -> RunResult:
     today = datetime.now(BEIJING).date()
-    academic_day = day or (today - timedelta(days=1))
-    # Trending is a live snapshot and must always be stored under the day on
-    # which it was fetched. Academic-only backfills keep their requested day.
-    report_day = academic_day if academic_only else today
+    rss_day = day or (today - timedelta(days=1))
+    report_day = today
     repositories: list[Repository] = []
     picks: list[Repository] = []
     history_path: Path | None = None
-    if academic_only:
-        logger.info("Academic-only 模式：跳过 GitHub、Tech Blog、Tech News 和历史读写")
+    if channels is None:
+        run_github = config.github.enabled
+        selected_channels = [
+            channel_id
+            for channel_id, channel in config.rss.channels.items()
+            if channel.enabled
+        ]
     else:
+        run_github = "github" in channels
+        selected_channels = [channel_id for channel_id in channels if channel_id != "github"]
+
+    if run_github:
         logger.info("正在获取 GitHub Trending")
         repositories = TrendingClient(config.github).fetch()
         logger.info("已获取 %d 个项目，正在补充 GitHub 元数据", len(repositories))
@@ -64,72 +65,38 @@ def run(
         history.apply_rank_history(repositories, today)
         picks = Personalizer(config.profile).select(repositories)
         github.enrich_readmes(picks)
-        Summarizer(config.summary).summarize(picks)
+        Summarizer(config.repo_llm).summarize(picks)
         history_path = history.save(repositories, today)
+    else:
+        logger.info("GitHub 通道未启用，跳过 GitHub Trending")
 
-    window = SearchWindow.for_beijing_day(academic_day)
-    academic_error = ""
-    academic_scanned_count = 0
-    papers: list[AcademicPaper] = []
-    try:
-        logger.info("正在获取 %s 的学术论文", academic_day.isoformat())
-        academic_run = AcademicPipeline(config.academic, config.summary).run(config.profile, window)
-        papers = academic_run.papers
-        academic_scanned_count = academic_run.scanned_count
-    except Exception as exc:  # Academic is intentionally isolated from the GitHub report.
-        academic_error = str(exc)
-        logger.exception("Academic 流水线失败，继续生成 GitHub 报告: %s", exc)
-
-    tech_blogs: list[TechBlogPost] = []
-    tech_news: list[TechNewsPost] = []
-    tech_blog_errors: dict[str, str] = {}
-    tech_news_errors: dict[str, str] = {}
-    tech_blog_scanned_count = 0
-    tech_news_scanned_count = 0
-    if not academic_only:
+    window = SearchWindow.for_beijing_day(rss_day)
+    channel_runs: dict[str, ChannelRun] = {}
+    for channel_id in selected_channels:
+        channel = config.rss.channels[channel_id]
+        if channels is not None:
+            channel = replace(channel, enabled=True)
         try:
-            blog_run = TechBlogPipeline(
-                config.tech_blog, config.academic, config.summary
-            ).run(config.profile, window)
-            tech_blogs = blog_run.posts
-            tech_blog_scanned_count = blog_run.scanned_count
-            tech_blog_errors = blog_run.errors
+            run_result = RssPipeline(channel, config.rss.defaults, config.repo_llm).run(
+                config.profile, window
+            )
         except Exception as exc:  # Keep every report category independently available.
-            tech_blog_errors["pipeline"] = str(exc)
-            logger.exception("Tech Blog 流水线失败，继续生成其他类别: %s", exc)
-        try:
-            news_run = TechNewsPipeline(
-                config.tech_news, config.academic, config.summary
-            ).run(config.profile, window)
-            tech_news = news_run.posts
-            tech_news_scanned_count = news_run.scanned_count
-            tech_news_errors = news_run.errors
-        except Exception as exc:
-            tech_news_errors["pipeline"] = str(exc)
-            logger.exception("Tech News 流水线失败，继续生成其他类别: %s", exc)
-
-    # A technical feed wins when an official source publishes the exact same URL in both groups.
-    blog_urls = {item.url for item in tech_blogs}
-    tech_news = [item for item in tech_news if item.url not in blog_urls]
-    for rank, post in enumerate(tech_news, start=1):
-        post.pick_rank = rank
+            logger.exception("RSS 专题 %s 运行失败，继续生成其他类别: %s", channel_id, exc)
+            run_result = ChannelRun(channel_id, channel.title, [], 0, 0, {"pipeline": str(exc)})
+        channel_runs[channel_id] = run_result
 
     writer = ReportWriter(config.report)
     daily = DailyReport(
         repositories=picks,
-        papers=papers,
-        tech_blogs=tech_blogs,
-        tech_news=tech_news,
-        academic_window=window.to_dict(),
-        academic_error=academic_error,
-        tech_blog_errors=tech_blog_errors,
-        tech_news_errors=tech_news_errors,
+        rss_channels=channel_runs,
+        rss_window=window.to_dict(),
     )
     report_paths = writer.write(daily, report_day)
     logger.info("报告已生成: %s", report_paths["markdown"])
 
     push_results: list[PushResult] = []
-    if config.push.enabled and not dry_run and (picks or papers or tech_blogs or tech_news):
+    has_rss_items = any(channel.items for channel in channel_runs.values())
+    if config.push.enabled and not dry_run and (picks or has_rss_items):
         title = f"RepoCourier 日报 · {report_day.isoformat()}"
         digest = writer.digest(daily, report_day, limit=config.profile.daily_picks)
         for pusher in configured_pushers(config.push):
@@ -138,17 +105,13 @@ def run(
             log = logger.info if result.success else logger.error
             log("推送通道 %s: %s", result.channel, result.detail)
     elif config.push.enabled and not dry_run:
-        logger.info("今天没有达到推荐条件的项目，跳过推送")
+        logger.info("今天没有达到推荐条件的内容，跳过推送")
     return RunResult(
         repositories=picks,
-        papers=papers,
-        tech_blogs=tech_blogs,
-        tech_news=tech_news,
+        rss_channels=channel_runs,
         scanned_count=len(repositories),
-        academic_scanned_count=academic_scanned_count,
-        tech_blog_scanned_count=tech_blog_scanned_count,
-        tech_news_scanned_count=tech_news_scanned_count,
         report_paths=report_paths,
         history_path=history_path,
         push_results=push_results,
+        ran_github=run_github,
     )

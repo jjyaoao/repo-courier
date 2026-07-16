@@ -51,9 +51,9 @@ def test_generate_preview_uses_request_scoped_config(tmp_path, monkeypatch) -> N
     config = captured["config"]
     assert config.profile.interests == ["agent"]
     assert config.profile.daily_picks == 3
-    assert config.summary.enabled is False
-    assert config.summary.api_key == ""
-    assert config.academic.enabled is False
+    assert config.repo_llm.enabled is False
+    assert config.repo_llm.api_key == ""
+    assert all(not channel.enabled for channel in config.rss.channels.values())
     assert config.push.enabled is False
     assert captured["kwargs"] == {"dry_run": True}
     assert result["repositories"][0]["full_name"] == "acme/agent-kit"

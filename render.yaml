@@ -13,4 +13,4 @@ services:
       - key: REPO_COURIER_WEB_CONCURRENCY
         value: "2"
       - key: REPO_COURIER_ALLOWED_AI_BASE_URLS
-        value: https://api.openai.com/v1
+        value: https://api.openai.com/v1/chat/completions

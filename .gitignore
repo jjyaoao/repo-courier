@@ -11,3 +11,5 @@ uv.lock
 dist/
 build/
 .qoder
+/reports/
+/data/
