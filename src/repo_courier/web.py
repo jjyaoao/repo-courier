@@ -10,11 +10,12 @@ from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, SecretStr, field_validator
 
-from .config import ReportConfig, load_config
+from .config import AppConfig, ReportConfig, load_config
 from .runner import run
 
 logger = logging.getLogger(__name__)
@@ -23,11 +24,14 @@ ASSET_DIR = Path(__file__).with_name("web_assets")
 DEFAULT_AI_BASE_URL = "https://api.openai.com/v1/chat/completions"
 SUPPORTED_LANGUAGES = {"", "python", "javascript", "typescript", "go", "rust", "java"}
 MAX_REQUEST_BYTES = 16 * 1024
+SOURCE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
 
 
 class PreviewRequest(BaseModel):
     interests: list[str] = Field(min_length=1, max_length=12)
+    sources: list[str] = Field(default_factory=lambda: ["github"], min_length=1, max_length=12)
     language: str = Field(default="", max_length=20)
+    github_token: SecretStr | None = Field(default=None, max_length=500)
     ai_base_url: str = Field(default=DEFAULT_AI_BASE_URL, max_length=300)
     ai_model: str = Field(default="", max_length=120)
     ai_api_key: SecretStr | None = Field(default=None, max_length=500)
@@ -56,6 +60,40 @@ class PreviewRequest(BaseModel):
             raise ValueError("不支持该语言筛选")
         return normalized
 
+    @field_validator("sources")
+    @classmethod
+    def clean_sources(cls, values: list[str]) -> list[str]:
+        cleaned = list(dict.fromkeys(value.strip().lower() for value in values))
+        if not cleaned or any(not SOURCE_ID_PATTERN.fullmatch(value) for value in cleaned):
+            raise ValueError("请至少选择一个可用的内容频道")
+        return cleaned
+
+
+def load_web_config() -> AppConfig:
+    return load_config(os.getenv("REPO_COURIER_CONFIG", "config/config.yaml"))
+
+
+def source_options(config: AppConfig | None = None) -> list[dict[str, object]]:
+    config = config or load_web_config()
+    options: list[dict[str, object]] = [
+        {
+            "id": "github",
+            "title": "GitHub Trending",
+            "source_count": 1,
+            "default": True,
+        }
+    ]
+    options.extend(
+        {
+            "id": channel.channel_id,
+            "title": channel.title,
+            "source_count": len(channel.sources),
+            "default": False,
+        }
+        for channel in config.rss.channels.values()
+    )
+    return options
+
 
 def allowed_ai_base_urls() -> set[str]:
     configured = os.getenv("REPO_COURIER_ALLOWED_AI_BASE_URLS", "")
@@ -81,19 +119,35 @@ def validate_ai_settings(payload: PreviewRequest) -> tuple[str, str, str]:
     return base_url, model, key
 
 
+def validate_sources(payload: PreviewRequest, config: AppConfig) -> None:
+    available = {str(option["id"]) for option in source_options(config)}
+    unknown = [source for source in payload.sources if source not in available]
+    if unknown:
+        raise ValueError(f"未知内容频道: {', '.join(unknown)}")
+
+
 def generate_preview(payload: PreviewRequest) -> dict[str, object]:
     base_url, model, api_key = validate_ai_settings(payload)
-    config_path = os.getenv("REPO_COURIER_CONFIG", "config/config.yaml")
-    config = load_config(config_path)
+    github_token = (
+        payload.github_token.get_secret_value().strip() if payload.github_token else ""
+    )
+    config = load_web_config()
+    validate_sources(payload, config)
     config.profile.interests = payload.interests
     config.profile.daily_picks = 3
     config.github.language = payload.language
+    if github_token:
+        config.github.token = github_token
     config.repo_llm.enabled = bool(api_key and model)
     config.repo_llm.api_key = api_key
     config.repo_llm.base_url = base_url or DEFAULT_AI_BASE_URL
     config.repo_llm.model = model
-    for channel in config.rss.channels.values():
-        channel.enabled = False
+    # Keep public previews bounded even when the self-hosted config is more ambitious.
+    config.rss.defaults.max_items_per_source = min(config.rss.defaults.max_items_per_source, 4)
+    config.rss.defaults.llm_candidates = min(config.rss.defaults.llm_candidates, 4)
+    config.rss.defaults.top_k = 3
+    config.rss.defaults.max_input_tokens = min(config.rss.defaults.max_input_tokens, 2_000)
+    config.rss.defaults.max_analysis_workers = min(config.rss.defaults.max_analysis_workers, 4)
     config.push.enabled = False
 
     with TemporaryDirectory(prefix="repo-courier-web-") as directory:
@@ -103,7 +157,7 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
             title=config.report.title,
             product_display_names=config.report.product_display_names,
         )
-        result = run(config, dry_run=True)
+        result = run(config, dry_run=True, channels=payload.sources)
 
     repositories = [
         {
@@ -128,9 +182,41 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
         }
         for item in result.repositories
     ]
+    channels = [
+        {
+            "id": channel.channel_id,
+            "title": channel.title,
+            "scanned_count": channel.scanned_count,
+            "errors_count": len(channel.errors),
+            "items": [
+                {
+                    "rank": item.pick_rank,
+                    "source_id": item.source_id,
+                    "source_name": item.source_name,
+                    "title": item.title,
+                    "url": item.url,
+                    "summary": item.summary,
+                    "authors": item.authors,
+                    "published_at": (
+                        item.published_at.isoformat() if item.published_at else None
+                    ),
+                    "relevance_score": item.relevance_score,
+                    "innovation_score": item.innovation_score,
+                    "recommendation_reason": item.recommendation_reason,
+                    "matched_keywords": item.matched_keywords,
+                    "analysis_status": item.analysis_status,
+                }
+                for item in channel.items
+            ],
+        }
+        for channel in result.rss_channels.values()
+    ]
     return {
         "scanned_count": result.scanned_count,
+        "rss_scanned_count": sum(channel["scanned_count"] for channel in channels),
         "repositories": repositories,
+        "channels": channels,
+        "sources": payload.sources,
         "used_ai": bool(api_key and model),
     }
 
@@ -138,8 +224,8 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
 def create_app() -> FastAPI:
     application = FastAPI(
         title="RepoCourier Web",
-        description="从 GitHub Trending 中选出今天最值得打开的 3 个项目。",
-        version="0.1.0-beta",
+        description="从 GitHub 与科技 RSS 频道中选出今天最值得打开的内容。",
+        version="0.2.0-beta",
         docs_url=None,
         redoc_url=None,
     )
@@ -147,6 +233,17 @@ def create_app() -> FastAPI:
         max(1, int(os.getenv("REPO_COURIER_WEB_CONCURRENCY", "2")))
     )
     application.mount("/assets", StaticFiles(directory=ASSET_DIR), name="assets")
+
+    @application.exception_handler(RequestValidationError)
+    async def validation_error_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        del request
+        errors = [
+            {key: value for key, value in error.items() if key not in {"input", "ctx"}}
+            for error in exc.errors()
+        ]
+        return JSONResponse(status_code=422, content={"detail": errors})
 
     @application.middleware("http")
     async def security_headers(request: Request, call_next):
@@ -176,6 +273,10 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @application.get("/api/options")
+    async def options() -> dict[str, object]:
+        return {"sources": source_options()}
+
     @application.post("/api/preview")
     async def preview(payload: PreviewRequest) -> dict[str, object]:
         try:
@@ -185,10 +286,7 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception as exc:
             logger.exception("Web 预览生成失败")
-            raise HTTPException(
-                status_code=502,
-                detail="暂时无法生成预览，请稍后再试",
-            ) from exc
+            raise HTTPException(status_code=502, detail="暂时无法生成预览，请稍后再试") from exc
 
     return application
 
@@ -199,7 +297,7 @@ app = create_app()
 def main() -> None:
     try:
         import uvicorn
-    except ImportError as exc:  # pragma: no cover - only possible without the web extra.
+    except ImportError as exc:  # pragma: no cover
         raise RuntimeError("请先安装 Web 依赖: pip install 'repo-courier[web]'") from exc
     uvicorn.run(
         "repo_courier.web:app",

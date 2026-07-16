@@ -3,154 +3,131 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="RepoCourier 会根据你的关注词，从 GitHub Trending 中选出今天最值得打开的 3 个项目。"
-    />
-    <title>RepoCourier · 今日个性化三选</title>
+    <meta name="description" content="RepoCourier 从 GitHub、科技新闻、大厂博客、学术论文、产品更新和安全资讯中挑出今日最相关的技术信号。" />
+    <title>RepoCourier · 你的每日技术情报员</title>
     <link rel="stylesheet" href="/assets/app.css" />
     <script src="/assets/app.js" defer></script>
   </head>
   <body>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
     <div class="page-shell">
       <header class="site-header">
         <a class="brand" href="/" aria-label="RepoCourier 首页">
-          <span class="brand-mark" aria-hidden="true">📮</span>
-          <span>RepoCourier</span>
+          <span class="brand-mark" aria-hidden="true"><span></span></span>
+          <span class="brand-copy"><strong>RepoCourier</strong><small>DAILY SIGNAL DESK</small></span>
         </a>
-        <span class="beta-pill">WEB BETA</span>
+        <div class="header-actions">
+          <span class="live-pill"><i></i> Web Beta</span>
+          <a href="https://github.com/jjyaoao/repo-courier" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+        </div>
       </header>
 
       <main>
         <section class="hero">
-          <p class="eyebrow">少看榜单，多看真正与你有关的项目</p>
-          <h1>今天的 GitHub Trending，<br />你只需要打开 <em>3 个</em>。</h1>
-          <p class="hero-copy">
-            写下你正在关注的技术方向。RepoCourier 会扫描榜单、重新排序，
-            并解释每个推荐为什么适合你。
-          </p>
+          <div class="hero-copy-block">
+            <p class="eyebrow"><span>01</span> PERSONAL TECH BRIEFING</p>
+            <h1>六个技术频道，<br />只留 <em>今天值得看的</em>。</h1>
+            <p class="hero-copy">
+              选择你在意的频道和技术方向。RepoCourier 会抓取、去噪、重新排序，
+              把 GitHub、新闻、博客、论文、产品与安全资讯收成一份个人日报。
+            </p>
+            <div class="trust-row" aria-label="产品承诺">
+              <span><b>06</b> 可选情报频道</span>
+              <span><b>03</b> 每个频道精选</span>
+              <span><b>0</b> 密钥持久化</span>
+            </div>
+          </div>
+
+          <div class="signal-board" aria-label="示例情报卡片">
+            <div class="board-topline"><span>TODAY / 09:00</span><span class="board-status"><i></i> SIGNALS READY</span></div>
+            <div class="board-route" aria-hidden="true"><span class="route-node active">RSS</span><i></i><span class="route-node">AI</span><i></i><span class="route-node">03</span></div>
+            <div class="board-item"><span class="board-rank">01</span><div><strong>Agent ecosystem update</strong><small>大厂博客 · Match 92</small></div><span class="trend">NEW</span></div>
+            <div class="board-item muted-item"><span class="board-rank">02</span><div><strong>Critical security release</strong><small>安全资讯 · Match 86</small></div><span class="trend">HOT</span></div>
+            <p class="board-caption">信息源可以很多，但你的注意力不应被无限占用。</p>
+          </div>
         </section>
 
-        <section class="workspace" aria-labelledby="configure-title">
+        <section class="desk" aria-labelledby="desk-title">
+          <div class="desk-heading">
+            <div><p class="eyebrow"><span>02</span> BUILD YOUR BRIEFING</p><h2 id="desk-title">配置今日情报</h2></div>
+            <p>默认不需要 Key，打开即可使用。</p>
+          </div>
+
           <form id="preview-form" class="config-card">
-            <div class="section-heading">
-              <span class="step">01</span>
-              <div>
-                <h2 id="configure-title">写下关注词</h2>
-                <p>英文关键词效果更好，使用逗号或换行分隔。</p>
+            <fieldset class="form-section source-section">
+              <legend><span class="section-number">1</span> 选择情报频道</legend>
+              <p class="section-help">可多选，每个频道独立筛选最多 3 条。RSS 频道会随项目配置自动更新。</p>
+              <div id="source-grid" class="source-grid" aria-live="polite">
+                <div class="source-card source-loading"><span class="source-icon">···</span><span class="source-copy"><strong>正在读取频道</strong><small>请稍候</small></span></div>
               </div>
-            </div>
+            </fieldset>
 
-            <label class="field-label" for="interests">我最近在关注</label>
-            <textarea
-              id="interests"
-              name="interests"
-              rows="3"
-              maxlength="420"
-              placeholder="agent, llm, mcp, developer tools, self-hosted"
-              required
-            >agent, llm, mcp, developer tools, automation, self-hosted</textarea>
-
-            <div class="field-grid">
-              <div>
-                <label class="field-label" for="language">编程语言</label>
-                <select id="language" name="language">
-                  <option value="">全部语言</option>
-                  <option value="python">Python</option>
-                  <option value="javascript">JavaScript</option>
-                  <option value="typescript">TypeScript</option>
-                  <option value="go">Go</option>
-                  <option value="rust">Rust</option>
-                  <option value="java">Java</option>
-                </select>
-              </div>
-              <div class="privacy-note">
-                <span class="privacy-icon" aria-hidden="true">◈</span>
-                <p><strong>默认不需要 AI</strong><br />个性化排序始终在本地规则中完成。</p>
-              </div>
-            </div>
-
-            <details class="ai-panel">
-              <summary>
-                <span>可选：使用你的 AI 模型润色项目摘要</span>
-                <small>密钥仅用于本次请求</small>
-              </summary>
-              <div class="ai-fields">
-                <label class="field-label" for="ai-base-url">模型服务</label>
-                <select id="ai-base-url" name="ai-base-url">
-                  <option value="https://api.openai.com/v1/chat/completions">OpenAI API</option>
-                </select>
-                <div class="field-grid">
-                  <div>
-                    <label class="field-label" for="ai-model">模型名称</label>
-                    <input
-                      id="ai-model"
-                      name="ai-model"
-                      autocomplete="off"
-                      placeholder="your-model-name"
-                    />
-                  </div>
-                  <div>
-                    <label class="field-label" for="ai-api-key">API Key</label>
-                    <input
-                      id="ai-api-key"
-                      name="ai-api-key"
-                      type="password"
-                      autocomplete="off"
-                      placeholder="sk-..."
-                    />
-                  </div>
+            <fieldset class="form-section">
+              <legend><span class="section-number">2</span> 告诉我你在意什么</legend>
+              <p class="section-help">使用逗号或换行分隔，英文技术关键词效果更好。</p>
+              <label class="sr-only" for="interests">关注词</label>
+              <textarea id="interests" name="interests" rows="3" maxlength="420" placeholder="agent, llm, mcp, developer tools, security" required>agent, llm, mcp, developer tools, automation, security</textarea>
+              <div class="field-row">
+                <div class="field-block">
+                  <label class="field-label" for="language">GitHub 语言筛选</label>
+                  <select id="language" name="language">
+                    <option value="">全部语言</option><option value="python">Python</option><option value="javascript">JavaScript</option><option value="typescript">TypeScript</option><option value="go">Go</option><option value="rust">Rust</option><option value="java">Java</option>
+                  </select>
                 </div>
-                <p class="security-copy">
-                  RepoCourier 不会把密钥写入报告、日志、数据库或浏览器存储。
-                </p>
+                <div class="field-tip"><span aria-hidden="true">✦</span><p><strong>不填 AI 也能用</strong>规则匹配、频道筛选与排序均可本地完成。</p></div>
               </div>
-            </details>
+            </fieldset>
 
-            <button id="submit-button" class="primary-button" type="submit">
-              <span>生成今日三选</span>
-              <span aria-hidden="true">→</span>
-            </button>
+            <fieldset class="form-section key-section">
+              <legend><span class="section-number">3</span> 可选增强 <span class="optional">BYOK</span></legend>
+              <p class="section-help">只有需要更高 GitHub 限额或 AI 摘要时才需要填写。</p>
+              <div class="key-list">
+                <details class="key-panel">
+                  <summary><span class="key-provider"><b>GH</b><span><strong>GitHub Token</strong><small>补全 Topics、README 并提高限额</small></span></span><span class="key-action">配置 <i aria-hidden="true"></i></span></summary>
+                  <div class="key-fields">
+                    <label class="field-label" for="github-token">Fine-grained token</label>
+                    <div class="password-wrap"><input id="github-token" name="github-token" type="password" autocomplete="off" placeholder="github_pat_..." /><button class="reveal-key" type="button" data-target="github-token">显示</button></div>
+                    <p>公开仓库只需 Metadata 和 Contents 的只读权限。</p>
+                  </div>
+                </details>
+                <details class="key-panel">
+                  <summary><span class="key-provider"><b>AI</b><span><strong>AI 分析</strong><small>GitHub 与所有 RSS 频道共用</small></span></span><span class="key-action">配置 <i aria-hidden="true"></i></span></summary>
+                  <div class="key-fields">
+                    <label class="field-label" for="ai-base-url">Chat Completions 接口</label>
+                    <input id="ai-base-url" name="ai-base-url" type="url" value="https://api.openai.com/v1/chat/completions" autocomplete="off" />
+                    <div class="field-row compact-row">
+                      <div class="field-block"><label class="field-label" for="ai-model">模型名称</label><input id="ai-model" name="ai-model" autocomplete="off" placeholder="your-model-name" /></div>
+                      <div class="field-block"><label class="field-label" for="ai-api-key">API Key</label><div class="password-wrap"><input id="ai-api-key" name="ai-api-key" type="password" autocomplete="off" placeholder="sk-..." /><button class="reveal-key" type="button" data-target="ai-api-key">显示</button></div></div>
+                    </div>
+                  </div>
+                </details>
+              </div>
+              <div class="security-strip"><span class="lock-mark" aria-hidden="true"></span><p><strong>密钥只在本次请求内存中使用</strong><br />不写入日志、报告、数据库或浏览器存储。</p></div>
+            </fieldset>
+
+            <div class="submit-row">
+              <p><span id="selected-source-count">1</span> 个频道 · 每个最多 3 条信号</p>
+              <button id="submit-button" class="primary-button" type="submit"><span>生成我的今日情报</span><i aria-hidden="true">→</i></button>
+            </div>
             <p id="form-error" class="form-error" role="alert" hidden></p>
           </form>
-
-          <aside class="principle-card" aria-label="RepoCourier 原则">
-            <p class="mono-label">THE COURIER RULE</p>
-            <blockquote>热度只是候选信号，<br />与你相关才是推荐理由。</blockquote>
-            <ol>
-              <li><span>20</span> 扫描 Trending 候选</li>
-              <li><span>01</span> 按你的关注词排序</li>
-              <li><span>03</span> 只保留值得打开的项目</li>
-            </ol>
-          </aside>
         </section>
 
         <section id="loading" class="loading-state" hidden aria-live="polite">
-          <div class="route-line"><span></span></div>
-          <p>正在扫描 GitHub Trending 并重新排序……</p>
-          <small>通常需要 10–30 秒</small>
+          <div class="loading-orbit"><span></span><i></i></div><div><strong>正在从所选频道收集信号……</strong><p>抓取 → 关键词匹配 → 频道内精选</p></div><small>频道越多，等待时间越长</small>
         </section>
 
         <section id="results" class="results" hidden aria-labelledby="results-title">
-          <div class="results-heading">
-            <div>
-              <p class="eyebrow">今日个性化速递</p>
-              <h2 id="results-title">最值得你打开的项目</h2>
-            </div>
-            <p id="scan-summary" class="scan-summary"></p>
-          </div>
-          <div id="result-list" class="result-list"></div>
-          <div id="empty-result" class="empty-result" hidden>
-            <h3>今天没有足够相关的项目</h3>
-            <p>RepoCourier 不会为了凑数推荐。可以尝试放宽关注词后再试一次。</p>
-          </div>
+          <div class="results-heading"><div><p class="eyebrow"><span>03</span> YOUR DAILY SIGNALS</p><h2 id="results-title">今天值得你打开的内容</h2></div><p id="scan-summary" class="scan-summary"></p></div>
+          <div id="github-results" class="result-channel" hidden><div class="channel-title"><span class="channel-icon">GH</span><h3>GitHub Trending</h3><i></i></div><div id="result-list" class="result-list"></div></div>
+          <div id="channel-results"></div>
+          <div id="empty-result" class="empty-result" hidden><span aria-hidden="true">∅</span><h3>今天没有足够相关的信号</h3><p>可以放宽关注词，或选择更多频道后重试。</p></div>
         </section>
       </main>
 
-      <footer>
-        <span>RepoCourier · Open source personal trending filter</span>
-        <a href="https://github.com/jjyaoao/repo-courier" rel="noreferrer">GitHub ↗</a>
-      </footer>
+      <footer><div><strong>RepoCourier</strong><span>·</span><span>Open-source personal tech radar</span></div><p>信息可以很多，今天值得看的只需几条。</p></footer>
     </div>
   </body>
 </html>

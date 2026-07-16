@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "repo-courier"
 version = "0.1.0"
-description = "Discover, summarize and deliver GitHub Trending repositories every day."
+description = "Personalized daily tech briefings from GitHub Trending and curated RSS feeds."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "jjyaoao" }]
-keywords = ["github", "trending", "daily-report", "feishu", "wechat", "qq"]
+keywords = ["github", "rss", "tech-news", "daily-report", "feishu", "wechat", "qq"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "License :: OSI Approved :: MIT License",
