@@ -20,7 +20,8 @@ def test_fallback_summary_without_ai_credentials() -> None:
     assert repository.summary == "A toolkit for building LLM agents"
     assert repository.category == "AI / 机器学习"
     assert any("321" in item for item in repository.highlights)
-    assert repository.risk_note
+    assert repository.risk_note == ""
+    assert repository.analysis_status == "fallback"
 
 
 def test_summary_uses_shared_chat_completions_url_directly() -> None:
@@ -62,3 +63,4 @@ def test_summary_uses_shared_chat_completions_url_directly() -> None:
 
     assert client.url == endpoint
     assert repository.summary == "中文概要"
+    assert repository.analysis_status == "ai"

@@ -67,7 +67,13 @@ def test_writer_outputs_github_and_five_dynamic_rss_sections(tmp_path) -> None:
     assert positions == sorted(positions)
     assert "acme/rocket" in markdown
     assert "为什么适合你" in markdown
-    assert "<!doctype html>" in paths["html"].read_text(encoding="utf-8")
+    assert "/100" not in markdown
+    assert "/10" not in markdown
+    assert "许可证未知" not in markdown
+    html_report = paths["html"].read_text(encoding="utf-8")
+    assert "<!doctype html>" in html_report
+    assert "/100" not in html_report
+    assert "/10" not in html_report
     payload = json.loads(paths["json"].read_text(encoding="utf-8"))
     assert payload["repositories"][0]["full_name"] == "acme/rocket"
     assert list(payload["rss_channels"]) == list(channels)
@@ -84,6 +90,8 @@ def test_digest_contains_github_and_rss_links() -> None:
     assert "https://github.com/acme/rocket" in digest
     assert "https://example.com/news" in digest
     assert "科技新闻" in digest
+    assert "/100" not in digest
+    assert "/10" not in digest
 
 
 def test_product_titles_include_source_product_in_markdown_and_html(tmp_path) -> None:

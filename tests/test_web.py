@@ -1,4 +1,6 @@
 import asyncio
+import json
+import time
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
@@ -67,6 +69,7 @@ def test_generate_preview_uses_request_scoped_config(monkeypatch) -> None:
             relevance_score=72,
             recommendation="深挖",
             why_for_you="命中 agent",
+            analysis_status="fallback",
             pick_rank=1,
         )
         return SimpleNamespace(repositories=[repository], rss_channels={}, scanned_count=20)
@@ -91,6 +94,7 @@ def test_generate_preview_uses_request_scoped_config(monkeypatch) -> None:
     assert config.push.enabled is False
     assert captured["kwargs"] == {"dry_run": True, "channels": ["github"]}
     assert result["repositories"][0]["full_name"] == "acme/agent-kit"
+    assert result["repositories"][0]["analysis_status"] == "fallback"
     assert result["channels"] == []
     assert result["used_ai"] is False
 
@@ -166,6 +170,42 @@ def test_ai_base_url_must_be_explicitly_allowed(monkeypatch) -> None:
         raise AssertionError("未在白名单中的模型地址应被拒绝")
 
 
+def test_ai_base_url_accepts_root_and_normalizes_endpoint(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "REPO_COURIER_ALLOWED_AI_BASE_URLS",
+        "https://compatible.example/v1",
+    )
+    payload = web.PreviewRequest(
+        interests=["agent"],
+        ai_base_url="https://compatible.example/v1",
+        ai_model="compatible-model",
+        ai_api_key="secret",
+    )
+
+    endpoint, model, key = web.validate_ai_settings(payload)
+
+    assert endpoint == "https://compatible.example/v1/chat/completions"
+    assert model == "compatible-model"
+    assert key == "secret"
+
+
+def test_ai_base_url_accepts_full_endpoint_from_root_allowlist(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "REPO_COURIER_ALLOWED_AI_BASE_URLS",
+        "https://compatible.example/api/v1",
+    )
+    payload = web.PreviewRequest(
+        interests=["agent"],
+        ai_base_url="https://compatible.example/api/v1/chat/completions",
+        ai_model="compatible-model",
+        ai_api_key="secret",
+    )
+
+    endpoint, _, _ = web.validate_ai_settings(payload)
+
+    assert endpoint == "https://compatible.example/api/v1/chat/completions"
+
+
 def test_preview_api_does_not_echo_secrets(monkeypatch) -> None:
     captured = {}
 
@@ -199,6 +239,83 @@ def test_preview_api_does_not_echo_secrets(monkeypatch) -> None:
     assert "top-secret" not in response.text
     assert "github-secret" not in response.text
     assert response.headers["cache-control"] == "no-store"
+
+
+def test_stream_preview_emits_channel_results_and_isolates_failures(monkeypatch) -> None:
+    monkeypatch.setattr(web, "load_web_config", config_with_news)
+
+    def fake_preview(payload):
+        source = payload.sources[0]
+        if source == "news":
+            raise RuntimeError("private failure detail")
+        return {
+            "scanned_count": 20,
+            "rss_scanned_count": 0,
+            "repositories": [{"full_name": "acme/agent-kit"}],
+            "channels": [],
+            "sources": [source],
+            "used_ai": False,
+        }
+
+    monkeypatch.setattr(web, "generate_preview", fake_preview)
+    response = request(
+        web.create_app(),
+        "POST",
+        "/api/preview/stream",
+        json={"interests": ["agent"], "sources": ["github", "news"]},
+    )
+    events = [json.loads(line) for line in response.text.splitlines() if line]
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/x-ndjson")
+    assert events[0]["type"] == "start"
+    assert {event["source"] for event in events if event["type"] == "channel_started"} == {
+        "github",
+        "news",
+    }
+    completed = [event for event in events if event["type"] == "channel_complete"]
+    assert completed[0]["source"] == "github"
+    assert completed[0]["result"]["repositories"][0]["full_name"] == "acme/agent-kit"
+    errors = [event for event in events if event["type"] == "channel_error"]
+    assert errors == [
+        {
+            "type": "channel_error",
+            "source": "news",
+            "title": "科技新闻",
+            "message": "该频道暂时不可用",
+        }
+    ]
+    assert events[-1] == {"type": "complete", "total": 2, "completed": 1, "failed": 1}
+    assert "private failure detail" not in response.text
+
+
+def test_stream_preview_times_out_slow_channel(monkeypatch) -> None:
+    monkeypatch.setattr(web, "load_web_config", config_with_news)
+
+    def slow_preview(payload):
+        del payload
+        time.sleep(0.05)
+        return {}
+
+    monkeypatch.setattr(web, "generate_preview", slow_preview)
+    app = web.create_app()
+    app.state.preview_channel_timeout = 0.01
+    response = request(
+        app,
+        "POST",
+        "/api/preview/stream",
+        json={"interests": ["agent"], "sources": ["news"]},
+    )
+    events = [json.loads(line) for line in response.text.splitlines() if line]
+
+    assert [event["type"] for event in events] == [
+        "start",
+        "channel_started",
+        "channel_error",
+        "complete",
+    ]
+    assert events[2]["message"] == "该频道处理超时"
+    assert events[-1]["failed"] == 1
 
 
 def test_web_home_health_and_options_are_available() -> None:

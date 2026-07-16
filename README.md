@@ -67,7 +67,7 @@ export REPO_COURIER_INTERESTS="rust,database,self-hosted,security"
 
 ## 可选：使用 AI 增强分析
 
-GitHub 摘要和所有 RSS 频道共用一套 OpenAI Chat Completions 兼容配置：
+GitHub 摘要和所有 RSS 频道共用一套 OpenAI Chat Completions 兼容配置，可使用 OpenAI 或其它实现相同请求与响应格式的模型服务：
 
 ```bash
 export REPO_LLM_API_KEY="your-key"
@@ -91,7 +91,9 @@ Web Beta 提供一个简约的单次情报页面：
 
 - 动态读取 GitHub 和 `config.yaml` 中的 RSS 频道。
 - 多选情报频道，每个频道最多精选 3 条。
-- 可选填写自己的 GitHub Token 与 AI API Key。
+- 所选频道有限并行处理，并通过流式响应逐个展示已完成的频道。
+- 可选填写自己的 GitHub Token，以及 OpenAI 兼容服务的 API 地址、模型名称与 API Key。
+- Web 页面可填写 API 根地址（如 `https://api.openai.com/v1`）或完整的 `chat/completions` 地址。
 - 密钥仅在本次请求内存中使用，不写入报告、日志、数据库或浏览器存储。
 - 公共 Web 实例只生成预览，不代替用户发送飞书、微信或 QQ 消息。
 
@@ -103,7 +105,9 @@ uv run repo-courier-web
 # 打开 http://127.0.0.1:8000
 ```
 
-部署到 Render 时可以使用仓库根目录的 [`render.yaml`](render.yaml)。公开实例必须通过 `REPO_COURIER_ALLOWED_AI_BASE_URLS` 限制允许请求的模型服务，避免任意网址访问。
+部署到 Render 时可以使用仓库根目录的 [`render.yaml`](render.yaml)。公开实例必须通过 `REPO_COURIER_ALLOWED_AI_BASE_URLS` 限制允许请求的模型服务，多个 API 根地址或完整端点使用逗号分隔，避免任意网址访问。
+
+Web 默认最多同时处理 3 个频道、单频道最多等待 60 秒；自部署时可以通过 `REPO_COURIER_WEB_CHANNEL_CONCURRENCY` 和 `REPO_COURIER_WEB_CHANNEL_TIMEOUT_SECONDS` 调整，但不建议把并发设置过高，以免对上游来源造成突发请求。
 
 ## 选择频道
 

@@ -27,6 +27,7 @@ class Repository:
     use_cases: list[str] = field(default_factory=list)
     category: str = "其他"
     risk_note: str = ""
+    analysis_status: str = "pending"
     relevance_score: int = 0
     recommendation: str = "略过"
     why_for_you: str = ""

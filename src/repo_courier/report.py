@@ -94,7 +94,7 @@ class ReportWriter:
             for item in report.repositories[:limit]:
                 lines.extend(
                     [
-                        f"{item.pick_rank}. [{item.recommendation} {item.relevance_score}/100] {item.full_name}",
+                        f"{item.pick_rank}. [{item.recommendation}] {item.full_name}",
                         f"为什么：{item.why_for_you}",
                         (item.summary or item.description)[:120],
                         item.url,
@@ -108,7 +108,7 @@ class ReportWriter:
             for item in channel.items:
                 lines.extend(
                     [
-                        f"{item.pick_rank}. [相关 {item.relevance_score}/10 · 创新 {item.innovation_score}/10] {item.title}",
+                        f"{item.pick_rank}. {item.title}",
                         f"推荐理由：{item.recommendation_reason}",
                         item.summary[:120],
                         item.url,
@@ -129,13 +129,13 @@ class ReportWriter:
         return [
             f"### {item.pick_rank}. [{item.full_name}]({item.url})",
             "",
-            f"`{item.recommendation}` · 匹配度 **{item.relevance_score}/100** · Trending 第 {item.rank} 名 `{item.rank_change}`",
+            f"`{item.recommendation}` · Trending 第 {item.rank} 名 `{item.rank_change}`",
             "",
             f"> **为什么适合你**：{item.why_for_you}",
             "",
             item.summary or item.description,
             "",
-            f"**数据**：⭐ {item.stars:,} · 今日 +{item.stars_today:,} · Fork {item.forks:,} · {item.language} · {item.license or '许可证未知'}",
+            f"**数据**：{_repository_data(item)}",
             "",
         ]
 
@@ -145,8 +145,6 @@ class ReportWriter:
         title = _display_title(item, self.config.product_display_names)
         return [
             f"### {item.pick_rank}. [{title}]({item.url})",
-            "",
-            f"相关性 **{item.relevance_score}/10** · 创新性 **{item.innovation_score}/10** · 综合分 **{item.final_score:.1f}**",
             "",
             f"> **推荐理由**：{item.recommendation_reason}",
             "",
@@ -166,7 +164,7 @@ class ReportWriter:
     def _repository_html(item: Repository) -> str:
         return f"""<article><div class="rank">{item.pick_rank}</div><div class="content">
         <h2><a href="{html.escape(item.url)}">{html.escape(item.full_name)}</a>
-        <small>{html.escape(item.recommendation)} · {item.relevance_score}/100</small></h2>
+        <small>{html.escape(item.recommendation)}</small></h2>
         <p class="why"><strong>为什么适合你：</strong>{html.escape(item.why_for_you)}</p>
         <p>{html.escape(item.summary or item.description)}</p>
         <div class="meta">Trending #{item.rank} · ⭐ {item.stars:,} · 今日 +{item.stars_today:,}</div>
@@ -176,11 +174,10 @@ class ReportWriter:
         keywords = "、".join(item.matched_keywords) or "无"
         title = _display_title(item, self.config.product_display_names)
         return f"""<article><div class="rank">{item.pick_rank}</div><div class="content">
-        <h2><a href="{html.escape(item.url)}">{html.escape(title)}</a>
-        <small>相关 {item.relevance_score}/10 · 创新 {item.innovation_score}/10</small></h2>
+        <h2><a href="{html.escape(item.url)}">{html.escape(title)}</a></h2>
         <p class="why"><strong>推荐理由：</strong>{html.escape(item.recommendation_reason)}</p>
         <p>{html.escape(item.summary)}</p>
-        <div class="meta">{html.escape(item.source_name)} · 命中词 {html.escape(keywords)} · 综合分 {item.final_score:.1f}</div>
+        <div class="meta">{html.escape(item.source_name)} · 命中词 {html.escape(keywords)}</div>
         </div></article>"""
 
 
@@ -191,3 +188,16 @@ def _display_title(item: RssItem, product_display_names: dict[str, str]) -> str:
     if product is None:
         product = item.source_name.removesuffix(" Releases").strip() or item.source_id
     return f"{product}：{item.title}"
+
+
+def _repository_data(item: Repository) -> str:
+    parts = [
+        f"⭐ {item.stars:,}",
+        f"今日 +{item.stars_today:,}",
+        f"Fork {item.forks:,}",
+    ]
+    if item.language and item.language.lower() != "unknown":
+        parts.append(item.language)
+    if item.license and item.license.lower() not in {"unknown", "noassertion", "other"}:
+        parts.append(item.license)
+    return " · ".join(parts)
