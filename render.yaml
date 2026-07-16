@@ -12,5 +12,9 @@ services:
         value: config/config.yaml
       - key: REPO_COURIER_WEB_CONCURRENCY
         value: "2"
+      - key: REPO_COURIER_WEB_CHANNEL_CONCURRENCY
+        value: "3"
+      - key: REPO_COURIER_WEB_CHANNEL_TIMEOUT_SECONDS
+        value: "60"
       - key: REPO_COURIER_ALLOWED_AI_BASE_URLS
-        value: https://api.openai.com/v1/chat/completions
+        value: https://api.openai.com/v1

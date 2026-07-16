@@ -49,6 +49,8 @@ class Summarizer:
             "你是资深开源项目分析师。根据给定事实做简洁、克制的中文分析，不得臆造。"
             "只返回 JSON 数组。每项字段必须为 full_name, summary, highlights, use_cases, "
             "category, risk_note；highlights 和 use_cases 是各 1-3 条的字符串数组。"
+            "risk_note 只填写明确、具体且会影响采用决策的风险，没有则返回空字符串；"
+            "不要把未识别到许可证元数据本身作为风险。"
         )
         response = self.client.post(
             self.config.base_url,
@@ -84,6 +86,7 @@ class Summarizer:
             repository.use_cases = _strings(item.get("use_cases"))
             repository.category = str(item.get("category") or "其他")
             repository.risk_note = str(item.get("risk_note") or "")
+            repository.analysis_status = "ai"
 
     @staticmethod
     def _parse_json(content: str) -> object:
@@ -103,8 +106,8 @@ class Summarizer:
             repository.highlights.append(f"关键词：{topic_text}")
         repository.use_cases = _infer_use_cases(repository)
         repository.category = _infer_category(repository)
-        if not repository.license:
-            repository.risk_note = "未从 GitHub 元数据识别到开源许可证，采用前请确认授权。"
+        repository.risk_note = ""
+        repository.analysis_status = "fallback"
 
 
 def _strings(value: object) -> list[str]:

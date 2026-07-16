@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import re
+from collections.abc import AsyncIterator
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, SecretStr, field_validator
 
@@ -21,7 +23,8 @@ from .runner import run
 logger = logging.getLogger(__name__)
 
 ASSET_DIR = Path(__file__).with_name("web_assets")
-DEFAULT_AI_BASE_URL = "https://api.openai.com/v1/chat/completions"
+DEFAULT_AI_BASE_URL = "https://api.openai.com/v1"
+DEFAULT_AI_ENDPOINT = f"{DEFAULT_AI_BASE_URL}/chat/completions"
 SUPPORTED_LANGUAGES = {"", "python", "javascript", "typescript", "go", "rust", "java"}
 MAX_REQUEST_BYTES = 16 * 1024
 SOURCE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
@@ -95,10 +98,34 @@ def source_options(config: AppConfig | None = None) -> list[dict[str, object]]:
     return options
 
 
+def normalize_ai_endpoint(value: str) -> str:
+    base_url = value.strip().rstrip("/")
+    parsed = urlsplit(base_url)
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError("模型服务地址必须是不包含账号、查询参数的 HTTPS 地址")
+    path = parsed.path.rstrip("/")
+    if not path.endswith("/chat/completions"):
+        path = f"{path}/chat/completions" if path else "/chat/completions"
+    return urlunsplit((parsed.scheme, parsed.netloc, path, "", ""))
+
+
 def allowed_ai_base_urls() -> set[str]:
     configured = os.getenv("REPO_COURIER_ALLOWED_AI_BASE_URLS", "")
-    values = {DEFAULT_AI_BASE_URL}
-    values.update(item.strip().rstrip("/") for item in configured.split(",") if item.strip())
+    values = {DEFAULT_AI_ENDPOINT}
+    for item in configured.split(","):
+        if not item.strip():
+            continue
+        try:
+            values.add(normalize_ai_endpoint(item))
+        except ValueError:
+            continue
     return values
 
 
@@ -110,13 +137,10 @@ def validate_ai_settings(payload: PreviewRequest) -> tuple[str, str, str]:
     if not key:
         return "", "", ""
 
-    base_url = payload.ai_base_url.strip().rstrip("/")
-    parsed = urlsplit(base_url)
-    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
-        raise ValueError("模型服务地址必须是不包含账号信息的 HTTPS 地址")
-    if base_url not in allowed_ai_base_urls():
+    endpoint = normalize_ai_endpoint(payload.ai_base_url)
+    if endpoint not in allowed_ai_base_urls():
         raise ValueError("该模型服务地址未被当前站点允许")
-    return base_url, model, key
+    return endpoint, model, key
 
 
 def validate_sources(payload: PreviewRequest, config: AppConfig) -> None:
@@ -140,7 +164,7 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
         config.github.token = github_token
     config.repo_llm.enabled = bool(api_key and model)
     config.repo_llm.api_key = api_key
-    config.repo_llm.base_url = base_url or DEFAULT_AI_BASE_URL
+    config.repo_llm.base_url = base_url or DEFAULT_AI_ENDPOINT
     config.repo_llm.model = model
     # Keep public previews bounded even when the self-hosted config is more ambitious.
     config.rss.defaults.max_items_per_source = min(config.rss.defaults.max_items_per_source, 4)
@@ -178,7 +202,9 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
             "matched_interests": item.matched_interests,
             "highlights": item.highlights,
             "use_cases": item.use_cases,
+            "category": item.category,
             "risk_note": item.risk_note,
+            "analysis_status": item.analysis_status,
         }
         for item in result.repositories
     ]
@@ -221,6 +247,107 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
     }
 
 
+def ndjson_event(event: dict[str, object]) -> bytes:
+    return (json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
+
+
+async def stream_preview_events(
+    application: FastAPI,
+    payload: PreviewRequest,
+    request: Request,
+    source_titles: dict[str, str],
+) -> AsyncIterator[bytes]:
+    queue: asyncio.Queue[dict[str, object]] = asyncio.Queue()
+    total = len(payload.sources)
+    completed = 0
+    failed = 0
+
+    yield ndjson_event(
+        {
+            "type": "start",
+            "total": total,
+            "sources": [
+                {"id": source, "title": source_titles[source]}
+                for source in payload.sources
+            ],
+        }
+    )
+
+    async def process_source(source: str) -> None:
+        async with application.state.preview_channel_slots:
+            await queue.put(
+                {
+                    "type": "channel_started",
+                    "source": source,
+                    "title": source_titles[source],
+                }
+            )
+            try:
+                source_payload = payload.model_copy(deep=True, update={"sources": [source]})
+                result = await asyncio.wait_for(
+                    run_in_threadpool(generate_preview, source_payload),
+                    timeout=application.state.preview_channel_timeout,
+                )
+                await queue.put(
+                    {
+                        "type": "channel_complete",
+                        "source": source,
+                        "title": source_titles[source],
+                        "result": result,
+                    }
+                )
+            except TimeoutError:
+                logger.warning("Web 流式预览频道 %s 处理超时", source)
+                await queue.put(
+                    {
+                        "type": "channel_error",
+                        "source": source,
+                        "title": source_titles[source],
+                        "message": "该频道处理超时",
+                    }
+                )
+            except Exception:
+                logger.exception("Web 流式预览频道 %s 处理失败", source)
+                await queue.put(
+                    {
+                        "type": "channel_error",
+                        "source": source,
+                        "title": source_titles[source],
+                        "message": "该频道暂时不可用",
+                    }
+                )
+
+    async with application.state.preview_slots:
+        tasks = [asyncio.create_task(process_source(source)) for source in payload.sources]
+        try:
+            while completed + failed < total:
+                if await request.is_disconnected():
+                    break
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=1)
+                except TimeoutError:
+                    continue
+                if event["type"] == "channel_complete":
+                    completed += 1
+                elif event["type"] == "channel_error":
+                    failed += 1
+                yield ndjson_event(event)
+            if completed + failed == total:
+                yield ndjson_event(
+                    {
+                        "type": "complete",
+                        "total": total,
+                        "completed": completed,
+                        "failed": failed,
+                    }
+                )
+        finally:
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+
 def create_app() -> FastAPI:
     application = FastAPI(
         title="RepoCourier Web",
@@ -231,6 +358,12 @@ def create_app() -> FastAPI:
     )
     application.state.preview_slots = asyncio.Semaphore(
         max(1, int(os.getenv("REPO_COURIER_WEB_CONCURRENCY", "2")))
+    )
+    application.state.preview_channel_slots = asyncio.Semaphore(
+        max(1, int(os.getenv("REPO_COURIER_WEB_CHANNEL_CONCURRENCY", "3")))
+    )
+    application.state.preview_channel_timeout = max(
+        10, int(os.getenv("REPO_COURIER_WEB_CHANNEL_TIMEOUT_SECONDS", "60"))
     )
     application.mount("/assets", StaticFiles(directory=ASSET_DIR), name="assets")
 
@@ -287,6 +420,21 @@ def create_app() -> FastAPI:
         except Exception as exc:
             logger.exception("Web 预览生成失败")
             raise HTTPException(status_code=502, detail="暂时无法生成预览，请稍后再试") from exc
+
+    @application.post("/api/preview/stream", response_class=StreamingResponse)
+    async def preview_stream(payload: PreviewRequest, request: Request) -> StreamingResponse:
+        try:
+            config = load_web_config()
+            validate_sources(payload, config)
+            validate_ai_settings(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        titles = {str(option["id"]): str(option["title"]) for option in source_options(config)}
+        return StreamingResponse(
+            stream_preview_events(application, payload, request, titles),
+            media_type="application/x-ndjson",
+            headers={"X-Accel-Buffering": "no"},
+        )
 
     return application
 
