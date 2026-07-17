@@ -8,6 +8,8 @@ from repo_courier.config import (
     ReportConfig,
     RssChannelConfig,
     RssConfig,
+    WechatAccountConfig,
+    WechatConfig,
 )
 from repo_courier.feeds import RssPipeline
 from repo_courier.github import GitHubClient
@@ -15,6 +17,7 @@ from repo_courier.models import ChannelRun, Repository
 from repo_courier.runner import run
 from repo_courier.summary import Summarizer
 from repo_courier.trending import TrendingClient
+from repo_courier.wechat import WechatPipeline
 
 
 def _rss_config(enabled: bool = True) -> RssConfig:
@@ -138,3 +141,39 @@ def test_explicit_github_channel_skips_all_rss(tmp_path, monkeypatch) -> None:
 
     assert result.ran_github is True
     assert result.rss_channels == {}
+
+
+def test_explicit_wechat_channel_runs_without_rss_or_github(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        TrendingClient,
+        "fetch",
+        lambda self: (_ for _ in ()).throw(AssertionError("GitHub 不应运行")),
+    )
+    monkeypatch.setattr(
+        RssPipeline,
+        "run",
+        lambda self, profile, window: (_ for _ in ()).throw(AssertionError("RSS 不应运行")),
+    )
+    seen = []
+
+    def fake_wechat_run(self, profile, window):
+        seen.append((self.config.enabled, window.start.date()))
+        return ChannelRun("wechat", self.config.title, [], 0, 0)
+
+    monkeypatch.setattr(WechatPipeline, "run", fake_wechat_run)
+    config = AppConfig(
+        wechat=WechatConfig(
+            enabled=False,
+            accounts=[WechatAccountConfig("Account", "fake-1")],
+        ),
+        report=ReportConfig(
+            output_dir=str(tmp_path / "reports"), data_dir=str(tmp_path / "history")
+        ),
+        push=PushConfig(enabled=False),
+    )
+
+    result = run(config, day=date(2026, 7, 17), dry_run=True, channels=["wechat"])
+
+    assert seen == [(True, date(2026, 7, 17))]
+    assert list(result.rss_channels) == ["wechat"]
+    assert result.ran_github is False

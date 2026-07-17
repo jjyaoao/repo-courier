@@ -14,17 +14,17 @@ from .runner import run
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="repo-courier",
-        description="抓取、筛选并投递 GitHub Trending 与五个 RSS 科技专题",
+        description="抓取、筛选并投递 GitHub Trending、RSS 科技专题与微信公众号文章",
     )
     parser.add_argument("--config", default="config/config.yaml", help="YAML 配置文件路径")
     parser.add_argument(
         "--date",
-        help="RSS 专题检索日期，格式 YYYY-MM-DD，默认北京时间昨天",
+        help="RSS 与微信公众号检索日期，格式 YYYY-MM-DD，默认北京时间昨天",
     )
     parser.add_argument("--dry-run", action="store_true", help="生成报告但不发送消息")
     parser.add_argument(
         "--channels",
-        help="仅运行指定通道，逗号分隔；可选 github 和 RSS 专题，all 运行全部",
+        help="仅运行指定通道，逗号分隔；可选 github、wechat 和 RSS 专题，all 运行全部",
     )
     parser.add_argument("--verbose", action="store_true", help="显示调试日志")
     return parser
@@ -36,7 +36,7 @@ def parse_channels(raw: str | None, config: AppConfig) -> list[str] | None:
     values = [value.strip() for value in raw.split(",")]
     if not values or any(not value for value in values):
         raise ValueError("--channels 不能为空或包含空专题名")
-    available_channels = ["github", *config.rss.channels]
+    available_channels = ["github", *config.rss.channels, "wechat"]
     if values == ["all"]:
         return available_channels
     if "all" in values:

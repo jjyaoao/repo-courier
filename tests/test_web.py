@@ -7,7 +7,14 @@ from types import SimpleNamespace
 import httpx
 
 from repo_courier import web
-from repo_courier.config import AppConfig, RssChannelConfig, RssConfig, RssSourceConfig
+from repo_courier.config import (
+    AppConfig,
+    RssChannelConfig,
+    RssConfig,
+    RssSourceConfig,
+    WechatAccountConfig,
+    WechatConfig,
+)
 from repo_courier.models import ChannelRun, Repository, RssItem
 
 
@@ -51,6 +58,17 @@ def test_source_options_follow_configured_rss_channels() -> None:
     assert [option["id"] for option in options] == ["github", "news"]
     assert options[0]["default"] is True
     assert options[1]["source_count"] == 1
+
+
+def test_source_options_include_wechat_only_when_accounts_are_configured() -> None:
+    config = config_with_news()
+    assert "wechat" not in [option["id"] for option in web.source_options(config)]
+
+    config.wechat = WechatConfig(accounts=[WechatAccountConfig("Account", "fake-1")])
+    options = web.source_options(config)
+
+    assert [option["id"] for option in options] == ["github", "news", "wechat"]
+    assert options[-1]["source_count"] == 1
 
 
 def test_generate_preview_uses_request_scoped_config(monkeypatch) -> None:
@@ -325,16 +343,17 @@ def test_web_home_health_and_options_are_available() -> None:
     options = request(app, "GET", "/api/options")
 
     assert home.status_code == 200
-    assert "六个技术频道" in home.text
+    assert "多个技术频道" in home.text
     assert health.json() == {"status": "ok"}
     assert {source["id"] for source in options.json()["sources"]} == {
         "github",
         "news",
         "blogs",
         "academic",
-        "products",
-        "security",
-    }
+            "products",
+            "security",
+            "wechat",
+        }
 
 
 def test_web_rejects_oversized_requests_without_echoing_content() -> None:

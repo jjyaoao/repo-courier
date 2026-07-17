@@ -24,6 +24,10 @@ def test_default_config_loads_five_unique_rss_channels() -> None:
     assert len(urls) == len(set(urls))
     assert config.rss.channels["academic"].sources[0].url.endswith("cs.AI+cs.CL+cs.CV+cs.LG")
     assert config.report.product_display_names["openai-codex"] == "OpenAI Codex"
+    assert config.wechat.enabled is True
+    assert len(config.wechat.accounts) == 6
+    assert config.wechat.verify_ssl is False
+    assert config.wechat.content_max_chars == 5000
 
 
 def test_environment_overrides_yaml(tmp_path, monkeypatch) -> None:
@@ -35,12 +39,60 @@ def test_environment_overrides_yaml(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("REPO_LLM_MODEL", "shared-model")
     monkeypatch.setenv("REPO_LLM_API_KEY", "shared-secret")
     monkeypatch.setenv("REPO_LLM_BASE_URL", "https://example.com/v1/chat/completions")
+    monkeypatch.setenv("WECHAT_AUTH_KEY", "wechat-secret")
 
     config = load_config(config_file)
 
     assert config.repo_llm.model == "shared-model"
     assert config.repo_llm.api_key == "shared-secret"
     assert config.repo_llm.base_url == "https://example.com/v1/chat/completions"
+    assert config.wechat.auth_key == "wechat-secret"
+
+
+def test_wechat_accounts_are_validated(tmp_path) -> None:
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        """
+wechat:
+  enabled: true
+  accounts:
+    - {name: 机器之心, fakeid: fake-1}
+    - {name: 量子位, fakeid: fake-2}
+""",
+        encoding="utf-8",
+    )
+
+    config = load_config(config_file)
+
+    assert [account.name for account in config.wechat.accounts] == ["机器之心", "量子位"]
+    assert [account.fakeid for account in config.wechat.accounts] == ["fake-1", "fake-2"]
+
+    config_file.write_text("wechat: {enabled: true, accounts: []}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="至少配置一个公众号"):
+        load_config(config_file)
+
+    config_file.write_text(
+        """
+wechat:
+  accounts:
+    - {name: One, fakeid: duplicate}
+    - {name: Two, fakeid: duplicate}
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="重复 fakeid"):
+        load_config(config_file)
+
+    config_file.write_text(
+        "wechat:\n  accounts:\n    - {name: Missing}\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="必须包含 name、fakeid"):
+        load_config(config_file)
+
+    config_file.write_text("wechat: {verify_ssl: nope}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="wechat.verify_ssl 必须是布尔值"):
+        load_config(config_file)
 
 
 def test_duplicate_rss_urls_keep_first_occurrence(tmp_path) -> None:

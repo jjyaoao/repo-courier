@@ -15,6 +15,8 @@ from .report import ReportWriter
 from .storage import HistoryStore
 from .summary import Summarizer
 from .trending import TrendingClient
+from .wechat import CHANNEL_ID as WECHAT_CHANNEL_ID
+from .wechat import WechatPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -45,14 +47,20 @@ def run(
     history_path: Path | None = None
     if channels is None:
         run_github = config.github.enabled
-        selected_channels = [
+        selected_rss_channels = [
             channel_id
             for channel_id, channel in config.rss.channels.items()
             if channel.enabled
         ]
+        run_wechat = config.wechat.enabled
     else:
         run_github = "github" in channels
-        selected_channels = [channel_id for channel_id in channels if channel_id != "github"]
+        run_wechat = WECHAT_CHANNEL_ID in channels
+        selected_rss_channels = [
+            channel_id
+            for channel_id in channels
+            if channel_id not in {"github", WECHAT_CHANNEL_ID}
+        ]
 
     if run_github:
         logger.info("正在获取 GitHub Trending")
@@ -72,7 +80,7 @@ def run(
 
     window = SearchWindow.for_beijing_day(rss_day)
     channel_runs: dict[str, ChannelRun] = {}
-    for channel_id in selected_channels:
+    for channel_id in selected_rss_channels:
         channel = config.rss.channels[channel_id]
         if channels is not None:
             channel = replace(channel, enabled=True)
@@ -84,6 +92,24 @@ def run(
             logger.exception("RSS 专题 %s 运行失败，继续生成其他类别: %s", channel_id, exc)
             run_result = ChannelRun(channel_id, channel.title, [], 0, 0, {"pipeline": str(exc)})
         channel_runs[channel_id] = run_result
+
+    if run_wechat:
+        wechat = replace(config.wechat, enabled=True) if channels is not None else config.wechat
+        try:
+            run_result = WechatPipeline(wechat, config.rss.defaults, config.repo_llm).run(
+                config.profile, window
+            )
+        except Exception as exc:  # Keep every report category independently available.
+            logger.exception("微信公众号频道运行失败，继续生成其他类别: %s", exc)
+            run_result = ChannelRun(
+                WECHAT_CHANNEL_ID,
+                wechat.title,
+                [],
+                0,
+                0,
+                {"pipeline": str(exc)},
+            )
+        channel_runs[WECHAT_CHANNEL_ID] = run_result
 
     writer = ReportWriter(config.report)
     daily = DailyReport(

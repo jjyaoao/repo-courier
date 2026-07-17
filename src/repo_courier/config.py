@@ -76,6 +76,24 @@ class RssConfig:
     channels: dict[str, RssChannelConfig] = field(default_factory=dict)
 
 
+@dataclass(frozen=True, slots=True)
+class WechatAccountConfig:
+    name: str
+    fakeid: str
+
+
+@dataclass(slots=True)
+class WechatConfig:
+    enabled: bool = False
+    title: str = "微信公众号"
+    api_base_url: str = "https://down.mptext.top/api/public/v1"
+    verify_ssl: bool = True
+    content_max_chars: int = 5000
+    prompt: str = "repo_courier.prompts.wechat:build_messages"
+    accounts: list[WechatAccountConfig] = field(default_factory=list)
+    auth_key: str = ""
+
+
 @dataclass(slots=True)
 class ReportConfig:
     output_dir: str = "reports"
@@ -101,6 +119,7 @@ class AppConfig:
     repo_llm: RepoLlmConfig = field(default_factory=RepoLlmConfig)
     profile: ProfileConfig = field(default_factory=ProfileConfig)
     rss: RssConfig = field(default_factory=RssConfig)
+    wechat: WechatConfig = field(default_factory=WechatConfig)
     report: ReportConfig = field(default_factory=ReportConfig)
     push: PushConfig = field(default_factory=PushConfig)
 
@@ -120,6 +139,7 @@ def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
     repo_llm = RepoLlmConfig(**repo_llm_values)
     profile = ProfileConfig(**_known(ProfileConfig, _section(data, "profile")))
     rss = _rss_config(_section(data, "rss"))
+    wechat = _wechat_config(_section(data, "wechat"))
     report = ReportConfig(**_known(ReportConfig, _section(data, "report")))
     push = PushConfig(**_known(PushConfig, _section(data, "push")))
 
@@ -127,6 +147,7 @@ def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
     repo_llm.api_key = os.getenv("REPO_LLM_API_KEY", "")
     repo_llm.base_url = _env("REPO_LLM_BASE_URL", repo_llm.base_url)
     repo_llm.model = _env("REPO_LLM_MODEL", repo_llm.model)
+    wechat.auth_key = os.getenv("WECHAT_AUTH_KEY", "")
     push.feishu_webhook = _env("FEISHU_WEBHOOK", push.feishu_webhook)
     push.wecom_webhook = _env("WECOM_WEBHOOK", push.wecom_webhook)
     push.serverchan_sendkey = _env("SERVERCHAN_SENDKEY", push.serverchan_sendkey)
@@ -141,9 +162,51 @@ def load_config(path: str | Path = "config/config.yaml") -> AppConfig:
         repo_llm=repo_llm,
         profile=profile,
         rss=rss,
+        wechat=wechat,
         report=report,
         push=push,
     )
+
+
+def _wechat_config(values: dict[str, Any]) -> WechatConfig:
+    scalar_values = _known(WechatConfig, values)
+    scalar_values.pop("accounts", None)
+    scalar_values.pop("auth_key", None)
+    if "content_max_chars" in scalar_values:
+        scalar_values["content_max_chars"] = _positive_int(
+            scalar_values["content_max_chars"], "wechat.content_max_chars"
+        )
+    config = WechatConfig(**scalar_values)
+    if not isinstance(config.enabled, bool):
+        raise ValueError("配置 wechat.enabled 必须是布尔值")
+    if not isinstance(config.verify_ssl, bool):
+        raise ValueError("配置 wechat.verify_ssl 必须是布尔值")
+    config.title = config.title.strip()
+    config.api_base_url = config.api_base_url.strip().rstrip("/")
+    config.prompt = config.prompt.strip()
+    if not config.title or not config.api_base_url or not config.prompt:
+        raise ValueError("配置 wechat 必须包含非空 title、api_base_url 和 prompt")
+    if config.enabled:
+        _validate_prompt(config.prompt, "wechat")
+
+    raw_accounts = values.get("accounts", [])
+    if not isinstance(raw_accounts, list):
+        raise ValueError("配置 wechat.accounts 必须是数组")
+    seen_fakeids: set[str] = set()
+    for index, raw in enumerate(raw_accounts):
+        if not isinstance(raw, dict):
+            raise ValueError(f"配置 wechat.accounts[{index}] 必须是对象")
+        name = str(raw.get("name") or "").strip()
+        fakeid = str(raw.get("fakeid") or "").strip()
+        if not name or not fakeid:
+            raise ValueError(f"配置 wechat.accounts[{index}] 必须包含 name、fakeid")
+        if fakeid in seen_fakeids:
+            raise ValueError(f"配置 wechat.accounts 包含重复 fakeid: {fakeid}")
+        seen_fakeids.add(fakeid)
+        config.accounts.append(WechatAccountConfig(name=name, fakeid=fakeid))
+    if config.enabled and not config.accounts:
+        raise ValueError("启用 wechat 时必须至少配置一个公众号")
+    return config
 
 
 def _rss_config(values: dict[str, Any]) -> RssConfig:

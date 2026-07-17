@@ -22,7 +22,8 @@ def test_parse_channels_supports_defaults_selection_and_all() -> None:
     assert parse_channels(None, config) is None
     assert parse_channels("news,academic", config) == ["news", "academic"]
     assert parse_channels("github,academic", config) == ["github", "academic"]
-    assert parse_channels("all", config) == ["github", *config.rss.channels]
+    assert parse_channels("all", config) == ["github", *config.rss.channels, "wechat"]
+    assert parse_channels("wechat", config) == ["wechat"]
 
 
 @pytest.mark.parametrize("raw", ["", "news,", "news,news", "all,news", "unknown"])

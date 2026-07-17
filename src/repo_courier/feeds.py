@@ -243,31 +243,14 @@ class RssPipeline:
         if not self.channel.enabled:
             return ChannelRun(self.channel.channel_id, self.channel.title, [], 0, 0)
         items, errors = self._fetch_sources(window, profile)
-        shortlist = sorted(items, key=_rule_sort_key)[: self.defaults.llm_candidates]
-        workers = max(1, min(self.defaults.max_analysis_workers, len(shortlist) or 1))
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            list(executor.map(lambda item: self.analyzer.analyze(item, profile), shortlist))
-        analyzed: list[RssItem] = []
-        for item in shortlist:
-            item.final_score = combined_score(item)
-            analyzed.append(item)
-        picks = sorted(analyzed, key=_final_sort_key)[: self.defaults.top_k]
-        for rank, item in enumerate(picks, start=1):
-            item.pick_rank = rank
-        logger.info(
-            "[%s] 日期内保留 %d 条，LLM 候选 %d 条，最终入选 %d 条",
-            self.channel.channel_id,
-            len(items),
-            len(shortlist),
-            len(picks),
-        )
-        return ChannelRun(
+        return analyze_channel_items(
             self.channel.channel_id,
             self.channel.title,
-            picks,
-            len(items),
-            len(shortlist),
+            items,
             errors,
+            profile,
+            self.defaults,
+            self.analyzer,
         )
 
     def _fetch_sources(
@@ -323,6 +306,34 @@ class RssPipeline:
                         exc,
                     )
         return collected, errors
+
+
+def analyze_channel_items(
+    channel_id: str,
+    title: str,
+    items: list[RssItem],
+    errors: dict[str, str],
+    profile: ProfileConfig,
+    defaults: RssDefaultsConfig,
+    analyzer: RssAnalyzer,
+) -> ChannelRun:
+    shortlist = sorted(items, key=_rule_sort_key)[: defaults.llm_candidates]
+    workers = max(1, min(defaults.max_analysis_workers, len(shortlist) or 1))
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        list(executor.map(lambda item: analyzer.analyze(item, profile), shortlist))
+    for item in shortlist:
+        item.final_score = combined_score(item)
+    picks = sorted(shortlist, key=_final_sort_key)[: defaults.top_k]
+    for rank, item in enumerate(picks, start=1):
+        item.pick_rank = rank
+    logger.info(
+        "[%s] 日期内保留 %d 条，LLM 候选 %d 条，最终入选 %d 条",
+        channel_id,
+        len(items),
+        len(shortlist),
+        len(picks),
+    )
+    return ChannelRun(channel_id, title, picks, len(items), len(shortlist), errors)
 
 
 @dataclass(slots=True)

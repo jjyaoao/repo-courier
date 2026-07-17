@@ -31,6 +31,7 @@ jobs:
           REPO_LLM_API_KEY: ${{ secrets.REPO_LLM_API_KEY }}
           REPO_LLM_BASE_URL: ${{ secrets.REPO_LLM_BASE_URL }}
           REPO_LLM_MODEL: ${{ secrets.REPO_LLM_MODEL }}
+          WECHAT_AUTH_KEY: ${{ secrets.WECHAT_AUTH_KEY }}
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
           SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}

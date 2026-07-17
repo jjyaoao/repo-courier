@@ -22,6 +22,7 @@ const SOURCE_PRESENTATION = {
   academic: { icon: "aχ", description: "arXiv AI、NLP、CV 与机器学习论文" },
   products: { icon: "P", description: "Codex、Claude Code、Gemini CLI 等发布日志" },
   security: { icon: "S", description: "Krebs、The Hacker News、Google Security 等" },
+  wechat: { icon: "微", description: "配置的微信公众号文章" },
 };
 
 const FALLBACK_SOURCES = [

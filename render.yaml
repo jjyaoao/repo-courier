@@ -8,6 +8,8 @@ services:
     envVars:
       - key: GITHUB_TOKEN
         sync: false
+      - key: WECHAT_AUTH_KEY
+        sync: false
       - key: REPO_COURIER_CONFIG
         value: config/config.yaml
       - key: REPO_COURIER_WEB_CONCURRENCY

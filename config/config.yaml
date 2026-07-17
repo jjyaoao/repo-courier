@@ -12,6 +12,7 @@ profile:
     - agent
     - llm
     - mcp
+    - ai
   exclude_keywords:
     - awesome list
     - interview
@@ -110,6 +111,27 @@ rss:
         - id: anquanke
           name: 安全客
           url: https://api.anquanke.com/data/v1/rss
+
+wechat:
+  enabled: true
+  title: 微信公众号
+  api_base_url: https://down.mptext.top/api/public/v1
+  verify_ssl: false
+  content_max_chars: 5000
+  prompt: repo_courier.prompts.wechat:build_messages
+  accounts:
+    - name: 机器之心
+      fakeid: MzA3MzI4MjgzMw==
+    - name: 量子位
+      fakeid: MzIzNjc1NzUzMw==
+    - name: 新智元
+      fakeid: MzI3MTA0MTk1MA==
+    - name: 阿里云开发者
+      fakeid: MzIzOTU0NTQ0MA==
+    - name: 腾讯云开发者
+      fakeid: MzI2NDU4OTExOQ==
+    - name: Datawhale
+      fakeid: MzIyNjM2MzQyNg==
 
 report:
   output_dir: reports
