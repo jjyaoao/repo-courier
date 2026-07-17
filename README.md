@@ -1,15 +1,15 @@
 # 📮 RepoCourier
 
-> 从 GitHub、科技新闻、大厂博客、学术论文、产品更新和安全资讯中，挑出今天真正与你相关的技术信号。
+> 从 微信公众号、GitHub、科技新闻、大厂博客、学术论文、产品更新和安全资讯中，挑出今天真正与你相关的技术信号。
 
 <p align="center">
   <img src="assets/Repo-readme.png" alt="RepoCourier 个性化技术情报" width="82%">
 </p>
 
-RepoCourier 不是又一个大而全的 RSS 阅读器。它先从多个公开信息源收集候选内容，再根据你的关注词去噪、重新排序，每个频道只保留最值得打开的几条。
+RepoCourier 不是又一个大而全的信息搜集器。它先从多个公开信息源收集候选内容，再根据你的关注词去噪、重新排序，每个频道只保留最值得打开的几条。
 
-- **6 个情报频道**：GitHub Trending + 5 个 RSS 专题。
-- **18 个上游信息源**：默认配置 17 个 RSS / Atom Feed 和 GitHub Trending。
+- **7 个情报频道**：微信公众号、GitHub、科技新闻、大厂博客、学术论文、产品更新和安全资讯。
+- **24 个上游信息源**：默认配置 Arxiv、机器之心、Google Security、Claude Code Release等信息源。
 - **个性化精选**：先用关键词筛选，再可选使用 AI 分析相关性与创新性。
 - **没有 AI Key 也能运行**：自动回退到本地规则摘要和排序。
 - **报告与推送**：输出 Markdown、HTML、JSON，可推送到飞书、企业微信、个人微信和 QQ。
@@ -24,6 +24,7 @@ RepoCourier 不是又一个大而全的 RSS 阅读器。它先从多个公开信
 | 🎓 学术论文 | arXiv AI、NLP、CV 与 Machine Learning | 研究相关性与方法创新性 |
 | 🚀 产品更新 | Gemini CLI、OpenAI Codex、Claude Code、OpenClaw Releases | 功能变化、兼容性与实用影响 |
 | 🛡️ 安全资讯 | Krebs on Security、The Hacker News、Google Security、安全客 | 风险等级、受影响范围与可操作性 |
+| 💬 微信公众号 | 机器之心、量子位、新智元、阿里云开发者、腾讯云开发者、Datawhale | 关注词、信息密度、技术深度与时效价值 |
 
 信息源不写死在程序中。可以在 [`config/config.yaml`](config/config.yaml) 增删 RSS / Atom Feed，也可以添加新的专题频道。
 
@@ -63,6 +64,12 @@ profile:
 
 ```bash
 export REPO_COURIER_INTERESTS="rust,database,self-hosted,security"
+```
+
+如果需要微信公众号源，需要访问 [https://down.mptext.top/dashboard/api](https://down.mptext.top/dashboard/api) 获取 apiKey，并填入：
+
+```bash
+export WECHAT_AUTH_KEY="your-api-key"
 ```
 
 ## 可选：使用 AI 增强分析

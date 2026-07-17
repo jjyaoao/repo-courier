@@ -95,6 +95,15 @@ def source_options(config: AppConfig | None = None) -> list[dict[str, object]]:
         }
         for channel in config.rss.channels.values()
     )
+    if config.wechat.accounts:
+        options.append(
+            {
+                "id": "wechat",
+                "title": config.wechat.title,
+                "source_count": len(config.wechat.accounts),
+                "default": False,
+            }
+        )
     return options
 
 
