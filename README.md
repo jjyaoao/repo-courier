@@ -3,7 +3,7 @@
 > 从 微信公众号、GitHub、科技新闻、大厂博客、学术论文、产品更新和安全资讯中，挑出今天真正与你相关的技术信号。
 
 <p align="center">
-  <img src="assets/Repo-readme.png" alt="RepoCourier 个性化技术情报" width="82%">
+  <img src="assets/Repo-readme-v2.png" alt="RepoCourier 个性化技术情报" width="82%">
 </p>
 
 RepoCourier 不是又一个大而全的信息搜集器。它先从多个公开信息源收集候选内容，再根据你的关注词去噪、重新排序，每个频道只保留最值得打开的几条。
