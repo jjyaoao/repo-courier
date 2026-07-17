@@ -25,6 +25,14 @@ logger = logging.getLogger(__name__)
 ASSET_DIR = Path(__file__).with_name("web_assets")
 DEFAULT_AI_BASE_URL = "https://api.openai.com/v1"
 DEFAULT_AI_ENDPOINT = f"{DEFAULT_AI_BASE_URL}/chat/completions"
+OFFICIAL_AI_BASE_URLS = (
+    DEFAULT_AI_BASE_URL,
+    "https://api.anthropic.com/v1",
+    "https://open.bigmodel.cn/api/paas/v4",
+    "https://api.moonshot.cn/v1",
+    "https://api.minimaxi.com/v1",
+    "https://api.stepfun.com/v1",
+)
 SUPPORTED_LANGUAGES = {"", "python", "javascript", "typescript", "go", "rust", "java"}
 MAX_REQUEST_BYTES = 16 * 1024
 SOURCE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
@@ -79,23 +87,7 @@ def load_web_config() -> AppConfig:
 
 def source_options(config: AppConfig | None = None) -> list[dict[str, object]]:
     config = config or load_web_config()
-    options: list[dict[str, object]] = [
-        {
-            "id": "github",
-            "title": "GitHub Trending",
-            "source_count": 1,
-            "default": True,
-        }
-    ]
-    options.extend(
-        {
-            "id": channel.channel_id,
-            "title": channel.title,
-            "source_count": len(channel.sources),
-            "default": False,
-        }
-        for channel in config.rss.channels.values()
-    )
+    options: list[dict[str, object]] = []
     if config.wechat.accounts:
         options.append(
             {
@@ -106,6 +98,23 @@ def source_options(config: AppConfig | None = None) -> list[dict[str, object]]:
                 "requires_key": not bool(config.wechat.auth_key.strip()),
             }
         )
+    options.append(
+        {
+            "id": "github",
+            "title": "GitHub Trending",
+            "source_count": 1,
+            "default": True,
+        }
+    )
+    options.extend(
+        {
+            "id": channel.channel_id,
+            "title": channel.title,
+            "source_count": len(channel.sources),
+            "default": False,
+        }
+        for channel in config.rss.channels.values()
+    )
     return options
 
 
@@ -129,7 +138,7 @@ def normalize_ai_endpoint(value: str) -> str:
 
 def allowed_ai_base_urls() -> set[str]:
     configured = os.getenv("REPO_COURIER_ALLOWED_AI_BASE_URLS", "")
-    values = {DEFAULT_AI_ENDPOINT}
+    values = {normalize_ai_endpoint(item) for item in OFFICIAL_AI_BASE_URLS}
     for item in configured.split(","):
         if not item.strip():
             continue
@@ -150,7 +159,10 @@ def validate_ai_settings(payload: PreviewRequest) -> tuple[str, str, str]:
 
     endpoint = normalize_ai_endpoint(payload.ai_base_url)
     if endpoint not in allowed_ai_base_urls():
-        raise ValueError("该模型服务地址未被当前站点允许")
+        raise ValueError(
+            "该模型服务地址未被当前站点允许；"
+            "自托管时请通过 REPO_COURIER_ALLOWED_AI_BASE_URLS 加入允许列表并重启"
+        )
     return endpoint, model, key
 
 
@@ -163,9 +175,7 @@ def validate_sources(payload: PreviewRequest, config: AppConfig) -> None:
 
 def validate_wechat_settings(payload: PreviewRequest, config: AppConfig) -> str:
     request_key = (
-        payload.wechat_auth_key.get_secret_value().strip()
-        if payload.wechat_auth_key
-        else ""
+        payload.wechat_auth_key.get_secret_value().strip() if payload.wechat_auth_key else ""
     )
     auth_key = request_key or config.wechat.auth_key.strip()
     if "wechat" in payload.sources and not auth_key:
@@ -175,9 +185,7 @@ def validate_wechat_settings(payload: PreviewRequest, config: AppConfig) -> str:
 
 def generate_preview(payload: PreviewRequest) -> dict[str, object]:
     base_url, model, api_key = validate_ai_settings(payload)
-    github_token = (
-        payload.github_token.get_secret_value().strip() if payload.github_token else ""
-    )
+    github_token = payload.github_token.get_secret_value().strip() if payload.github_token else ""
     config = load_web_config()
     validate_sources(payload, config)
     wechat_auth_key = validate_wechat_settings(payload, config)
@@ -234,35 +242,60 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
         }
         for item in result.repositories
     ]
-    channels = [
-        {
-            "id": channel.channel_id,
-            "title": channel.title,
-            "scanned_count": channel.scanned_count,
-            "errors_count": len(channel.errors),
-            "items": [
-                {
-                    "rank": item.pick_rank,
-                    "source_id": item.source_id,
-                    "source_name": item.source_name,
-                    "title": item.title,
-                    "url": item.url,
-                    "summary": item.summary,
-                    "authors": item.authors,
-                    "published_at": (
-                        item.published_at.isoformat() if item.published_at else None
-                    ),
-                    "relevance_score": item.relevance_score,
-                    "innovation_score": item.innovation_score,
-                    "recommendation_reason": item.recommendation_reason,
-                    "matched_keywords": item.matched_keywords,
-                    "analysis_status": item.analysis_status,
-                }
-                for item in channel.items
-            ],
-        }
-        for channel in result.rss_channels.values()
-    ]
+    channels = []
+    for channel in result.rss_channels.values():
+        if channel.channel_id == "wechat":
+            expected_sources = len(config.wechat.accounts)
+        else:
+            rss_channel = config.rss.channels.get(channel.channel_id)
+            expected_sources = len(rss_channel.sources) if rss_channel else 0
+        fully_failed = (
+            bool(channel.errors)
+            and channel.scanned_count == 0
+            and len(channel.errors) >= max(expected_sources, 1)
+        )
+        public_error = ""
+        if fully_failed:
+            if channel.channel_id == "wechat":
+                error_text = " ".join(channel.errors.values()).lower()
+                if "网络安全策略拦截" in error_text:
+                    public_error = "当前网络拦截公众号数据服务，请放行 down.mptext.top"
+                elif "401" in error_text or "403" in error_text:
+                    public_error = "公众号接口拒绝访问，请检查网络权限或 API Key"
+                else:
+                    public_error = "公众号数据服务暂时不可用"
+            else:
+                public_error = f"{channel.title}的上游来源暂时不可用"
+        channels.append(
+            {
+                "id": channel.channel_id,
+                "title": channel.title,
+                "scanned_count": channel.scanned_count,
+                "errors_count": len(channel.errors),
+                "status": "error" if fully_failed else "ok",
+                "message": public_error,
+                "items": [
+                    {
+                        "rank": item.pick_rank,
+                        "source_id": item.source_id,
+                        "source_name": item.source_name,
+                        "title": item.title,
+                        "url": item.url,
+                        "summary": item.summary,
+                        "authors": item.authors,
+                        "published_at": (
+                            item.published_at.isoformat() if item.published_at else None
+                        ),
+                        "relevance_score": item.relevance_score,
+                        "innovation_score": item.innovation_score,
+                        "recommendation_reason": item.recommendation_reason,
+                        "matched_keywords": item.matched_keywords,
+                        "analysis_status": item.analysis_status,
+                    }
+                    for item in channel.items
+                ],
+            }
+        )
     return {
         "scanned_count": result.scanned_count,
         "rss_scanned_count": sum(channel["scanned_count"] for channel in channels),
@@ -275,6 +308,18 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
 
 def ndjson_event(event: dict[str, object]) -> bytes:
     return (json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n").encode()
+
+
+def preview_failure_message(result: dict[str, object]) -> str:
+    channels = result.get("channels")
+    if not isinstance(channels, list):
+        return ""
+    for channel in channels:
+        if not isinstance(channel, dict) or channel.get("status") != "error":
+            continue
+        message = channel.get("message")
+        return str(message) if message else "该频道暂时不可用"
+    return ""
 
 
 async def stream_preview_events(
@@ -293,19 +338,26 @@ async def stream_preview_events(
             "type": "start",
             "total": total,
             "sources": [
-                {"id": source, "title": source_titles[source]}
-                for source in payload.sources
+                {"id": source, "title": source_titles[source]} for source in payload.sources
             ],
         }
     )
 
     async def process_source(source: str) -> None:
         async with application.state.preview_channel_slots:
+            request_wechat_key = bool(
+                source == "wechat"
+                and payload.wechat_auth_key
+                and payload.wechat_auth_key.get_secret_value().strip()
+            )
             await queue.put(
                 {
                     "type": "channel_started",
                     "source": source,
                     "title": source_titles[source],
+                    "credential_source": ("request" if request_wechat_key else "server")
+                    if source == "wechat"
+                    else None,
                 }
             )
             try:
@@ -314,6 +366,20 @@ async def stream_preview_events(
                     run_in_threadpool(generate_preview, source_payload),
                     timeout=application.state.preview_channel_timeout,
                 )
+                failure_message = preview_failure_message(result)
+                if failure_message:
+                    await queue.put(
+                        {
+                            "type": "channel_error",
+                            "source": source,
+                            "title": source_titles[source],
+                            "message": failure_message,
+                            "credential_source": ("request" if request_wechat_key else "server")
+                            if source == "wechat"
+                            else None,
+                        }
+                    )
+                    return
                 await queue.put(
                     {
                         "type": "channel_complete",

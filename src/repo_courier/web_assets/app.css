@@ -815,6 +815,16 @@ select:focus {
   line-height: 1.6;
 }
 
+.ai-provider-field {
+  max-width: 280px;
+  margin-bottom: 14px;
+}
+
+.ai-provider-field select {
+  height: 46px;
+  font-size: 12px;
+}
+
 .compact-row {
   grid-template-columns: 1fr 1fr;
   margin: 0 0 14px;
@@ -1216,6 +1226,16 @@ select:focus {
   color: #8d4c38;
 }
 
+.wechat-channel .channel-icon {
+  background: #147b5f;
+  color: #f1ffd0;
+}
+
+.wechat-card {
+  border-color: rgba(20, 123, 95, 0.32);
+  background: linear-gradient(145deg, #fffef8 0%, #f4faef 100%);
+}
+
 .recommendation {
   display: inline-flex;
   padding: 6px 9px;
@@ -1241,6 +1261,40 @@ select:focus {
   font-size: 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.wechat-source {
+  display: inline-flex;
+  overflow: hidden;
+  margin-left: auto;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 7px;
+  border: 1px solid #c8ddbf;
+  border-radius: 999px;
+  background: #edf8e7;
+  color: var(--green-dark);
+  white-space: nowrap;
+}
+
+.wechat-source i {
+  color: var(--green);
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.wechat-source strong {
+  overflow: hidden;
+  max-width: 112px;
+  font-size: 9px;
+  text-overflow: ellipsis;
+}
+
+.wechat-source small {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 7px;
 }
 
 .signal-content h4 {
@@ -1874,6 +1928,10 @@ footer p {
   gap: 9px;
 }
 
+.key-list.without-wechat {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .key-panel {
   border-radius: 11px;
 }
@@ -1996,6 +2054,10 @@ footer {
   }
 
   .key-list {
+    grid-template-columns: 1fr;
+  }
+
+  .key-list.without-wechat {
     grid-template-columns: 1fr;
   }
 

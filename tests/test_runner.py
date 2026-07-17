@@ -144,6 +144,12 @@ def test_explicit_github_channel_skips_all_rss(tmp_path, monkeypatch) -> None:
 
 
 def test_explicit_wechat_channel_runs_without_rss_or_github(tmp_path, monkeypatch) -> None:
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 7, 17, 15, 0, tzinfo=tz)
+
+    monkeypatch.setattr("repo_courier.runner.datetime", FixedDateTime)
     monkeypatch.setattr(
         TrendingClient,
         "fetch",
@@ -172,7 +178,7 @@ def test_explicit_wechat_channel_runs_without_rss_or_github(tmp_path, monkeypatc
         push=PushConfig(enabled=False),
     )
 
-    result = run(config, day=date(2026, 7, 17), dry_run=True, channels=["wechat"])
+    result = run(config, dry_run=True, channels=["wechat"])
 
     assert seen == [(True, date(2026, 7, 17))]
     assert list(result.rss_channels) == ["wechat"]

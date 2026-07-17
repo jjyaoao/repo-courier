@@ -3,6 +3,7 @@ from __future__ import annotations
 import threading
 from datetime import date, datetime
 
+import httpx
 import pytest
 
 from repo_courier.config import (
@@ -13,7 +14,12 @@ from repo_courier.config import (
     WechatConfig,
 )
 from repo_courier.feeds import BEIJING, SearchWindow
-from repo_courier.wechat import WechatArticle, WechatPipeline, _article_objects
+from repo_courier.wechat import (
+    WechatArticle,
+    WechatPipeline,
+    _article_objects,
+    _raise_for_status,
+)
 
 
 class Response:
@@ -86,6 +92,18 @@ def test_article_parser_supports_top_level_and_nested_shapes() -> None:
     assert _article_objects({"articles": [first]}) == [first]
     assert _article_objects({"data": {"list": [{"articles": [second]}]}}) == [second]
     assert _article_objects({"list": [{"articles": [first, second]}]}) == [first, second]
+
+
+def test_network_policy_block_is_reported_separately_from_api_authentication() -> None:
+    request = httpx.Request("GET", "https://down.mptext.top/api/public/v1/article")
+    response = httpx.Response(
+        403,
+        request=request,
+        text="您要访问的域名不在安全策略默认允许的范围内",
+    )
+
+    with pytest.raises(RuntimeError, match="网络安全策略拦截"):
+        _raise_for_status(response)
 
 
 def test_account_pagination_collects_all_target_day_articles_and_stops_on_old_page() -> None:

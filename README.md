@@ -39,7 +39,7 @@ uv sync
 uv run repo-courier --channels all --dry-run
 ```
 
-`--dry-run` 会生成报告，但不发送消息。不传 `--date` 时，GitHub 获取实时 Trending，RSS 频道检索北京时间昨天的内容。
+`--dry-run` 会生成报告，但不发送消息。不传 `--date` 时，GitHub 获取实时 Daily Trending，微信公众号和 RSS 频道检索北京时间今天的内容。
 
 报告会写入：
 
@@ -55,7 +55,7 @@ reports/YYYY-MM-DD/daily.json
 
 ```yaml
 profile:
-  interests: [agent, llm, mcp, developer tools, security]
+  interests: [agent, llm, mcp, ai]
   exclude_keywords: [awesome list, interview, tutorial collection]
   daily_picks: 3
 ```
@@ -82,7 +82,36 @@ export REPO_LLM_BASE_URL="https://api.openai.com/v1/chat/completions"
 export REPO_LLM_MODEL="your-model"
 ```
 
-API Key 只通过环境变量或 Web 页面的单次请求传入，不要写进 YAML 或提交到 Git。未配置 Key 时，项目会继续使用透明的关键词规则运行。
+API Key 只通过环境变量或 Web 页面传入，不要写进 YAML 或提交到 Git。未配置 Key 时，项目会继续使用透明的关键词规则运行。
+
+### 接入其他 OpenAI 兼容 API
+
+Web 页面已预设 OpenAI、Claude、智谱 GLM、Kimi、MiniMax 和阶跃星辰的官方 Chat Completions 端点，选择服务商后会自动填入 API 根地址和模型示例。模型 ID 会随厂商更新，请以各平台控制台中当前可用的 ID 为准。
+
+| 服务商 | API 根地址 | 模型示例 |
+| --- | --- | --- |
+| OpenAI | `https://api.openai.com/v1` | 按账户可用模型填写 |
+| [Claude](https://platform.claude.com/docs/zh-CN/cli-sdks-libraries/libraries/openai-sdk) | `https://api.anthropic.com/v1` | `claude-sonnet-4-6` |
+| [智谱 GLM](https://docs.bigmodel.cn/cn/guide/develop/openai/introduction) | `https://open.bigmodel.cn/api/paas/v4` | `glm-5.2` |
+| [Kimi](https://platform.kimi.com/docs/api/overview) | `https://api.moonshot.cn/v1` | `kimi-k2.6` |
+| [MiniMax](https://platform.minimaxi.com/docs/api-reference/text-chat-openai) | `https://api.minimaxi.com/v1` | `MiniMax-M2.7` |
+| [阶跃星辰](https://platform.stepfun.com/docs/zh/guides/developer/openai) | `https://api.stepfun.com/v1` | `step-3.5-flash` |
+
+Claude 通过 Anthropic 官方的 OpenAI SDK 兼容层接入，可用于 RepoCourier 所需的基础 Chat Completions 分析。如果需要 Claude 的完整高级能力，Anthropic 更推荐使用原生 Messages API。
+
+为防止公共 Web 服务被用来访问任意网址，官方预设以外的聚合网关或自建服务需由部署者显式放行。例如使用 DMXAPI：
+
+```bash
+REPO_COURIER_ALLOWED_AI_BASE_URLS=https://www.dmxapi.cn/v1 uv run repo-courier-web
+```
+
+同时放行多个自定义地址时使用逗号分隔：
+
+```bash
+REPO_COURIER_ALLOWED_AI_BASE_URLS="https://www.dmxapi.cn/v1,https://your-gateway.example/v1" uv run repo-courier-web
+```
+
+环境变量只在进程启动时读取；修改后需要重启 Web 服务。允许列表只放行目标地址，用户仍需在页面填入自己的模型 ID 和 API Key。
 
 GitHub Token 也是可选的，用于提高 API 限额和补全仓库信息：
 
@@ -101,7 +130,7 @@ Web Beta 提供一个简约的单次情报页面：
 - 所选频道有限并行处理，并通过流式响应逐个展示已完成的频道。
 - 可按需填写自己的 GitHub Token、微信公众号 API Key，以及 OpenAI 兼容服务的 API 地址、模型名称与 API Key。
 - Web 页面可填写 API 根地址（如 `https://api.openai.com/v1`）或完整的 `chat/completions` 地址。
-- 密钥仅在本次请求内存中使用，不写入报告、日志、数据库或浏览器存储。
+- 页面填写的密钥只保留到当前页面刷新，不写入报告、日志、数据库或浏览器存储。
 - 公共 Web 实例只生成预览，不代替用户发送飞书、微信或 QQ 消息。
 
 本地启动：

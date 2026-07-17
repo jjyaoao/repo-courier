@@ -18,6 +18,7 @@ from repo_courier.feeds import (
     RssPipeline,
     SearchWindow,
     TokenLimiter,
+    analyze_channel_items,
     combined_score,
     load_prompt_builder,
     parse_feed,
@@ -113,6 +114,59 @@ def test_keyword_score_keeps_zero_matches_and_hard_filters_exclusions() -> None:
     item.content_excerpt += " tutorial collection"
     profile.exclude_keywords = ["tutorial collection"]
     assert score_item(item, profile) is False
+
+
+def test_technical_keywords_match_common_chinese_names_without_partial_ai_matches() -> None:
+    profile = ProfileConfig(interests=["agent", "llm", "mcp", "ai"], exclude_keywords=[])
+    item = _item(
+        title="智能体与大语言模型的新进展",
+        content_excerpt="通过模型上下文协议连接人工智能工具",
+    )
+
+    assert score_item(item, profile) is True
+    assert item.matched_keywords == ["agent", "llm", "mcp", "ai"]
+
+    unrelated = _item(title="Daily build", content_excerpt="Database availability")
+    assert score_item(unrelated, ProfileConfig(interests=["ai"], exclude_keywords=[])) is True
+    assert unrelated.matched_keywords == []
+    assert unrelated.rule_score == 0
+
+
+def test_channel_picks_cover_different_keywords_before_filling_by_score() -> None:
+    class RuleAnalyzer:
+        def analyze(self, item, profile):
+            del item, profile
+
+    def candidate(index, keyword, score):
+        return _item(
+            entry_id=str(index),
+            title=f"Item {index}",
+            matched_keywords=[keyword],
+            rule_score=score,
+        )
+
+    items = [
+        candidate(1, "ai", 100),
+        candidate(2, "ai", 90),
+        candidate(3, "ai", 80),
+        candidate(4, "agent", 30),
+        candidate(5, "mcp", 20),
+    ]
+    result = analyze_channel_items(
+        "news",
+        "科技新闻",
+        items,
+        {},
+        ProfileConfig(interests=["agent", "mcp", "ai"], exclude_keywords=[]),
+        RssDefaultsConfig(llm_candidates=4, top_k=3),
+        RuleAnalyzer(),
+    )
+
+    assert [item.matched_keywords for item in result.items] == [
+        ["agent"],
+        ["mcp"],
+        ["ai"],
+    ]
 
 
 def test_token_limiter_caps_complete_messages_at_one_thousand() -> None:

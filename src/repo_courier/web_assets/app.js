@@ -8,8 +8,20 @@ const githubResults = document.querySelector("#github-results");
 const resultList = document.querySelector("#result-list");
 const channelResults = document.querySelector("#channel-results");
 const emptyResult = document.querySelector("#empty-result");
+const emptyResultTitle = document.querySelector("#empty-result-title");
+const emptyResultDescription = document.querySelector("#empty-result-description");
 const scanSummary = document.querySelector("#scan-summary");
 const formError = document.querySelector("#form-error");
+const keyList = document.querySelector(".key-list");
+const wechatKeyPanel = document.querySelector("#wechat-key-panel");
+const wechatKeyInput = document.querySelector("#wechat-auth-key");
+const wechatKeySummary = document.querySelector("#wechat-key-summary");
+const wechatKeyAction = document.querySelector("#wechat-key-action");
+const wechatKeyNote = document.querySelector("#wechat-key-note");
+const aiProviderSelect = document.querySelector("#ai-provider");
+const aiBaseUrlInput = document.querySelector("#ai-base-url");
+const aiModelInput = document.querySelector("#ai-model");
+const aiCompatibilityNote = document.querySelector("#ai-compatibility-note");
 const progressTitle = document.querySelector("#progress-title");
 const progressSummary = document.querySelector("#progress-summary");
 const channelProgress = document.querySelector("#channel-progress");
@@ -25,14 +37,23 @@ const SOURCE_PRESENTATION = {
   wechat: { icon: "微", description: "机器之心、量子位、新智元等公众号文章" },
 };
 
+const AI_PROVIDERS = {
+  openai: { label: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "" },
+  claude: { label: "Claude", baseUrl: "https://api.anthropic.com/v1", model: "claude-sonnet-4-6" },
+  zhipu: { label: "智谱 GLM", baseUrl: "https://open.bigmodel.cn/api/paas/v4", model: "glm-5.2" },
+  kimi: { label: "Kimi", baseUrl: "https://api.moonshot.cn/v1", model: "kimi-k2.6" },
+  minimax: { label: "MiniMax", baseUrl: "https://api.minimaxi.com/v1", model: "MiniMax-M2.7" },
+  stepfun: { label: "阶跃星辰", baseUrl: "https://api.stepfun.com/v1", model: "step-3.5-flash" },
+};
+
 const FALLBACK_SOURCES = [
+  { id: "wechat", title: "微信公众号", source_count: 6, default: false, requires_key: true },
   { id: "github", title: "GitHub Trending", source_count: 1, default: true },
   { id: "news", title: "科技新闻", source_count: 4, default: false },
   { id: "blogs", title: "大厂博客", source_count: 4, default: false },
   { id: "academic", title: "学术论文", source_count: 1, default: false },
   { id: "products", title: "产品更新", source_count: 4, default: false },
   { id: "security", title: "安全资讯", source_count: 4, default: false },
-  { id: "wechat", title: "微信公众号", source_count: 6, default: false, requires_key: true },
 ];
 
 const escapeHtml = (value) =>
@@ -54,6 +75,37 @@ function selectedSources() {
     (input) => input.value,
   );
 }
+
+function comparableAiBaseUrl(value) {
+  return value.trim().replace(/\/+$/, "").replace(/\/chat\/completions$/, "");
+}
+
+function updateAiProviderNote() {
+  const provider = AI_PROVIDERS[aiProviderSelect.value];
+  aiCompatibilityNote.textContent = provider
+    ? `已适配 ${provider.label} 的 Chat Completions 接口；仍可修改模型名称。`
+    : "自定义地址需在启动时加入 REPO_COURIER_ALLOWED_AI_BASE_URLS；页面会自动补全 /chat/completions。";
+}
+
+aiProviderSelect.addEventListener("change", () => {
+  const provider = AI_PROVIDERS[aiProviderSelect.value];
+  if (provider) {
+    aiBaseUrlInput.value = provider.baseUrl;
+    aiModelInput.value = provider.model;
+  } else {
+    aiBaseUrlInput.focus();
+  }
+  updateAiProviderNote();
+});
+
+aiBaseUrlInput.addEventListener("input", () => {
+  const current = comparableAiBaseUrl(aiBaseUrlInput.value);
+  const matched = Object.entries(AI_PROVIDERS).find(
+    ([, provider]) => comparableAiBaseUrl(provider.baseUrl) === current,
+  );
+  aiProviderSelect.value = matched?.[0] || "custom";
+  updateAiProviderNote();
+});
 
 function updateSourceCount() {
   selectedSourceCount.textContent = String(selectedSources().length);
@@ -78,6 +130,18 @@ function sourceCard(source) {
 function renderSources(sources) {
   sourceCatalog.clear();
   sources.forEach((source) => sourceCatalog.set(source.id, source));
+  const wechatSource = sources.find((source) => source.id === "wechat");
+  const hasServerWechatKey = Boolean(wechatSource && !wechatSource.requires_key);
+  wechatKeyPanel.hidden = !wechatSource;
+  wechatKeyPanel.open = false;
+  keyList.classList.toggle("without-wechat", !wechatSource);
+  wechatKeySummary.textContent = hasServerWechatKey
+    ? "已有默认 Key，可选填覆盖"
+    : "读取预设公众号文章";
+  wechatKeyAction.firstChild.textContent = hasServerWechatKey ? "可选 " : "添加 ";
+  wechatKeyNote.innerHTML = hasServerWechatKey
+    ? "服务端已配置默认 Key；留空即可使用，也可填入你自己的 Key 仅覆盖本次请求。"
+    : '选择微信公众号频道时使用。可前往 <a href="https://down.mptext.top/dashboard/api" target="_blank" rel="noreferrer">mptext API 控制台 ↗</a> 获取。';
   sourceGrid.innerHTML = sources.map(sourceCard).join("");
   sourceGrid.querySelectorAll('input[name="sources"]').forEach((input) => {
     input.addEventListener("change", updateSourceCount);
@@ -174,16 +238,21 @@ function rssAiDetails(item) {
     </details>`;
 }
 
-function rssCard(item) {
+function rssCard(item, channelId) {
   const tags = (item.matched_keywords || [])
     .map((keyword) => `<span>${escapeHtml(keyword)}</span>`)
     .join("");
   const status = item.analysis_status === "ai" ? "AI 精选" : "规则精选";
   const inlineSummary = item.analysis_status === "ai" ? "" : `<p class="summary">${escapeHtml(item.summary)}</p>`;
+  const date = shortDate(item.published_at);
+  const isWechat = channelId === "wechat";
+  const sourceMeta = isWechat
+    ? `<span class="wechat-source"><i>公众号</i><strong>${escapeHtml(item.source_name)}</strong>${date ? `<small>${escapeHtml(date)}</small>` : ""}</span>`
+    : `<span class="source-rank">${escapeHtml(item.source_name)}${date ? ` · ${escapeHtml(date)}` : ""}</span>`;
   return `
-    <article class="signal-card rss-card">
+    <article class="signal-card rss-card${isWechat ? " wechat-card" : ""}">
       <div class="signal-content">
-        <div class="signal-topline"><span class="pick-index paper-index">${String(item.rank || 0).padStart(2, "0")}</span><span class="recommendation paper-status">${status}</span><span class="source-rank">${escapeHtml(item.source_name)} · ${escapeHtml(shortDate(item.published_at))}</span></div>
+        <div class="signal-topline"><span class="pick-index paper-index">${String(item.rank || 0).padStart(2, "0")}</span><span class="recommendation paper-status">${status}</span>${sourceMeta}</div>
         <h4><a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">${escapeHtml(item.title)} <span>↗</span></a></h4>
         <p class="why">${escapeHtml(item.recommendation_reason)}</p>
         ${inlineSummary}
@@ -197,31 +266,44 @@ function channelSection(channel) {
   if (!channel.items?.length) return "";
   const presentation = SOURCE_PRESENTATION[channel.id] || { icon: "RSS" };
   return `
-    <div class="result-channel">
+    <div class="result-channel${channel.id === "wechat" ? " wechat-channel" : ""}">
       <div class="channel-title"><span class="channel-icon">${escapeHtml(presentation.icon)}</span><h3>${escapeHtml(channel.title)}</h3><span class="channel-scan">扫描 ${number(channel.scanned_count)} 条${channel.errors_count ? ` · ${number(channel.errors_count)} 个源异常` : ""}</span><i></i></div>
-      <div class="result-list">${channel.items.map(rssCard).join("")}</div>
+      <div class="result-list">${channel.items.map((item) => rssCard(item, channel.id)).join("")}</div>
     </div>`;
 }
 
+function prioritizeSources(sources) {
+  const priority = { wechat: 0, github: 1 };
+  return sources
+    .map((source, index) => ({ source, index }))
+    .sort((left, right) =>
+      (priority[left.source.id] ?? 2) - (priority[right.source.id] ?? 2) || left.index - right.index,
+    )
+    .map(({ source }) => source);
+}
+
 function resetProgress(sources) {
-  progressTitle.textContent = `正在处理 0 / ${sources.length} 个频道`;
-  progressSummary.textContent = `0 / ${sources.length}`;
-  channelProgress.innerHTML = sources
+  const orderedSources = prioritizeSources(sources);
+  progressTitle.textContent = `正在处理 0 / ${orderedSources.length} 个频道`;
+  progressSummary.textContent = `0 / ${orderedSources.length}`;
+  channelProgress.innerHTML = orderedSources
     .map((source) => {
       const title = source.title || sourceCatalog.get(source.id)?.title || source.id;
       return `<span id="progress-${escapeHtml(source.id)}" class="progress-chip"><i></i><b>${escapeHtml(title)}</b><small class="progress-status">等待中</small></span>`;
     })
     .join("");
-  channelResults.innerHTML = sources
-    .filter((source) => source.id !== "github")
+  channelResults.innerHTML = orderedSources
     .map((source) => `<div id="channel-slot-${escapeHtml(source.id)}"></div>`)
     .join("");
+  const githubSlot = document.getElementById("channel-slot-github");
+  if (githubSlot) githubSlot.append(githubResults);
 }
 
 function updateProgress(source, state, label) {
   const chip = document.getElementById(`progress-${source}`);
   if (!chip) return;
   chip.className = `progress-chip is-${state}`;
+  chip.title = state === "error" ? label : "";
   const status = chip.querySelector(".progress-status");
   if (status) status.textContent = label;
 }
@@ -274,6 +356,8 @@ form.addEventListener("submit", async (event) => {
   results.hidden = true;
   githubResults.hidden = true;
   emptyResult.hidden = true;
+  emptyResultTitle.textContent = "今天没有足够相关的信号";
+  emptyResultDescription.textContent = "可以放宽关注词，或选择更多频道后重试。";
   resultList.innerHTML = "";
   channelResults.innerHTML = "";
 
@@ -289,7 +373,6 @@ form.addEventListener("submit", async (event) => {
     formError.hidden = false;
     return;
   }
-  const wechatKeyInput = document.querySelector("#wechat-auth-key");
   const wechatNeedsKey = sources.includes("wechat") && sourceCatalog.get("wechat")?.requires_key;
   if (wechatNeedsKey && !wechatKeyInput.value.trim()) {
     document.querySelector("#wechat-key-panel").open = true;
@@ -305,8 +388,8 @@ form.addEventListener("submit", async (event) => {
     language: document.querySelector("#language").value,
     github_token: document.querySelector("#github-token").value.trim() || null,
     wechat_auth_key: wechatKeyInput.value.trim() || null,
-    ai_base_url: document.querySelector("#ai-base-url").value.trim(),
-    ai_model: document.querySelector("#ai-model").value.trim(),
+    ai_base_url: aiBaseUrlInput.value.trim(),
+    ai_model: aiModelInput.value.trim(),
     ai_api_key: document.querySelector("#ai-api-key").value.trim() || null,
   };
 
@@ -339,6 +422,7 @@ form.addEventListener("submit", async (event) => {
     let hasItems = false;
     let revealedResults = false;
     let streamCompleted = false;
+    const failureMessages = [];
 
     await readNdjson(response, (streamEvent) => {
       if (streamEvent.type === "start") {
@@ -347,7 +431,10 @@ form.addEventListener("submit", async (event) => {
         return;
       }
       if (streamEvent.type === "channel_started") {
-        updateProgress(streamEvent.source, "running", "抓取中");
+        const status = streamEvent.source === "wechat" && streamEvent.credential_source === "request"
+          ? "页面 Key · 抓取中"
+          : "抓取中";
+        updateProgress(streamEvent.source, "running", status);
         return;
       }
       if (streamEvent.type === "channel_complete") {
@@ -373,7 +460,17 @@ form.addEventListener("submit", async (event) => {
       if (streamEvent.type === "channel_error") {
         processed += 1;
         failed += 1;
-        updateProgress(streamEvent.source, "error", "暂不可用");
+        const credentialNote = streamEvent.source === "wechat" && streamEvent.credential_source === "request"
+          ? "已使用页面填写的 Key；"
+          : "";
+        const failureMessage = streamEvent.message || "该频道暂时不可用";
+        failureMessages.push(`${credentialNote}${failureMessage}`);
+        const failureLabel = failureMessage.includes("网络拦截")
+          ? "网络已拦截"
+          : failureMessage.includes("拒绝访问")
+            ? "403 · 访问被拒"
+            : "抓取失败";
+        updateProgress(streamEvent.source, "error", failureLabel);
         progressTitle.textContent = `正在处理 ${processed} / ${total} 个频道`;
         progressSummary.textContent = `${processed} / ${total}`;
         return;
@@ -388,11 +485,14 @@ form.addEventListener("submit", async (event) => {
 
     if (!streamCompleted) throw new Error("流式连接提前结束，请重试。");
     if (!hasItems) {
+      if (failed) {
+        emptyResultTitle.textContent = failed === total ? "所选频道暂时无法抓取" : "部分频道抓取失败";
+        emptyResultDescription.textContent = [...new Set(failureMessages)].join("；");
+      }
       emptyResult.hidden = false;
       results.hidden = false;
     }
     document.querySelector("#github-token").value = "";
-    wechatKeyInput.value = "";
     document.querySelector("#ai-api-key").value = "";
   } catch (error) {
     formError.textContent = error.message || "暂时无法生成情报。";

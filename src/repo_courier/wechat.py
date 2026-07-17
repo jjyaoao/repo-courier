@@ -138,7 +138,7 @@ class WechatPipeline:
                 params={"fakeid": account.fakeid, "begin": begin, "size": PAGE_SIZE},
                 headers={"X-Auth-Key": self.config.auth_key},
             )
-            response.raise_for_status()
+            _raise_for_status(response)
             raw_articles = _article_objects(response.json())
             if not raw_articles:
                 break
@@ -213,8 +213,18 @@ class WechatPipeline:
             f"{self.config.api_base_url}/download",
             params={"url": article.url, "format": "text"},
         )
-        response.raise_for_status()
+        _raise_for_status(response)
         return response.text.strip()[: self.config.content_max_chars]
+
+
+def _raise_for_status(response: WechatResponse) -> None:
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        body = exc.response.text
+        if "域名不在安全策略" in body or "域名拦截" in body:
+            raise RuntimeError("当前网络安全策略拦截 down.mptext.top") from exc
+        raise
 
 
 def _article_objects(payload: object) -> list[dict[str, Any]]:
