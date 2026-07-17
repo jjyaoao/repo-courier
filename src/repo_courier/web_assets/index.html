@@ -27,7 +27,7 @@
       <main>
         <section class="hero compact-hero">
           <p class="eyebrow">PERSONAL TECH BRIEFING</p>
-          <h1>多个技术频道，只留<em>今天值得看的</em></h1>
+          <h1>七个技术频道，只留<em>今天值得看的</em></h1>
           <p class="hero-copy">选频道、写关注词，RepoCourier 自动抓取、去噪并生成一份个人技术日报。</p>
         </section>
 
@@ -62,7 +62,7 @@
             </fieldset>
 
             <fieldset class="form-section key-section">
-              <legend>可选增强 <small>不填也能用</small></legend>
+              <legend>访问凭证 <small>按所选频道填写</small></legend>
               <div class="key-list">
                 <details class="key-panel">
                   <summary><span class="key-provider"><b>GH</b><span><strong>GitHub Token</strong><small>提高限额与补全信息</small></span></span><span class="key-action">添加 <i aria-hidden="true"></i></span></summary>
@@ -70,6 +70,14 @@
                     <label class="field-label" for="github-token">Fine-grained token</label>
                     <div class="password-wrap"><input id="github-token" name="github-token" type="password" autocomplete="off" placeholder="github_pat_..." /><button class="reveal-key" type="button" data-target="github-token">显示</button></div>
                     <p>公开仓库只需 Metadata 和 Contents 的只读权限。</p>
+                  </div>
+                </details>
+                <details id="wechat-key-panel" class="key-panel">
+                  <summary><span class="key-provider"><b>微</b><span><strong>微信公众号 API</strong><small>读取预设公众号文章</small></span></span><span class="key-action">添加 <i aria-hidden="true"></i></span></summary>
+                  <div class="key-fields">
+                    <label class="field-label" for="wechat-auth-key">API Key</label>
+                    <div class="password-wrap"><input id="wechat-auth-key" name="wechat-auth-key" type="password" autocomplete="off" placeholder="微信公众号抓取服务 API Key" /><button class="reveal-key" type="button" data-target="wechat-auth-key">显示</button></div>
+                    <p>选择微信公众号频道时使用。可前往 <a href="https://down.mptext.top/dashboard/api" target="_blank" rel="noreferrer">mptext API 控制台 ↗</a> 获取。</p>
                   </div>
                 </details>
                 <details class="key-panel">

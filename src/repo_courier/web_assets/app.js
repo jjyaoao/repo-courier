@@ -22,7 +22,7 @@ const SOURCE_PRESENTATION = {
   academic: { icon: "aχ", description: "arXiv AI、NLP、CV 与机器学习论文" },
   products: { icon: "P", description: "Codex、Claude Code、Gemini CLI 等发布日志" },
   security: { icon: "S", description: "Krebs、The Hacker News、Google Security 等" },
-  wechat: { icon: "微", description: "配置的微信公众号文章" },
+  wechat: { icon: "微", description: "机器之心、量子位、新智元等公众号文章" },
 };
 
 const FALLBACK_SOURCES = [
@@ -32,6 +32,7 @@ const FALLBACK_SOURCES = [
   { id: "academic", title: "学术论文", source_count: 1, default: false },
   { id: "products", title: "产品更新", source_count: 4, default: false },
   { id: "security", title: "安全资讯", source_count: 4, default: false },
+  { id: "wechat", title: "微信公众号", source_count: 6, default: false, requires_key: true },
 ];
 
 const escapeHtml = (value) =>
@@ -63,11 +64,14 @@ function sourceCard(source) {
     description: `${source.source_count || 0} 个 RSS / Atom 信息源`,
   };
   const sourceLabel = `${source.title}，${presentation.description}`;
+  const keyHint = source.requires_key
+    ? `<small class="source-key-hint" title="需要 API Key">KEY</small>`
+    : "";
   return `
     <label class="source-option" title="${escapeHtml(presentation.description)}">
       <input type="checkbox" name="sources" value="${escapeHtml(source.id)}" aria-label="${escapeHtml(sourceLabel)}" ${source.default ? "checked" : ""} />
       <span class="source-checkbox" aria-hidden="true">✓</span>
-      <span class="source-title">${escapeHtml(source.title)}</span>
+      <span class="source-title">${escapeHtml(source.title)}</span>${keyHint}
     </label>`;
 }
 
@@ -285,12 +289,22 @@ form.addEventListener("submit", async (event) => {
     formError.hidden = false;
     return;
   }
+  const wechatKeyInput = document.querySelector("#wechat-auth-key");
+  const wechatNeedsKey = sources.includes("wechat") && sourceCatalog.get("wechat")?.requires_key;
+  if (wechatNeedsKey && !wechatKeyInput.value.trim()) {
+    document.querySelector("#wechat-key-panel").open = true;
+    formError.textContent = "微信公众号频道需要 API Key，请在可选增强中填写。";
+    formError.hidden = false;
+    wechatKeyInput.focus();
+    return;
+  }
 
   const payload = {
     interests,
     sources,
     language: document.querySelector("#language").value,
     github_token: document.querySelector("#github-token").value.trim() || null,
+    wechat_auth_key: wechatKeyInput.value.trim() || null,
     ai_base_url: document.querySelector("#ai-base-url").value.trim(),
     ai_model: document.querySelector("#ai-model").value.trim(),
     ai_api_key: document.querySelector("#ai-api-key").value.trim() || null,
@@ -378,6 +392,7 @@ form.addEventListener("submit", async (event) => {
       results.hidden = false;
     }
     document.querySelector("#github-token").value = "";
+    wechatKeyInput.value = "";
     document.querySelector("#ai-api-key").value = "";
   } catch (error) {
     formError.textContent = error.message || "暂时无法生成情报。";

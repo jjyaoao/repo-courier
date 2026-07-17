@@ -35,6 +35,7 @@ class PreviewRequest(BaseModel):
     sources: list[str] = Field(default_factory=lambda: ["github"], min_length=1, max_length=12)
     language: str = Field(default="", max_length=20)
     github_token: SecretStr | None = Field(default=None, max_length=500)
+    wechat_auth_key: SecretStr | None = Field(default=None, max_length=500)
     ai_base_url: str = Field(default=DEFAULT_AI_BASE_URL, max_length=300)
     ai_model: str = Field(default="", max_length=120)
     ai_api_key: SecretStr | None = Field(default=None, max_length=500)
@@ -102,6 +103,7 @@ def source_options(config: AppConfig | None = None) -> list[dict[str, object]]:
                 "title": config.wechat.title,
                 "source_count": len(config.wechat.accounts),
                 "default": False,
+                "requires_key": not bool(config.wechat.auth_key.strip()),
             }
         )
     return options
@@ -159,6 +161,18 @@ def validate_sources(payload: PreviewRequest, config: AppConfig) -> None:
         raise ValueError(f"未知内容频道: {', '.join(unknown)}")
 
 
+def validate_wechat_settings(payload: PreviewRequest, config: AppConfig) -> str:
+    request_key = (
+        payload.wechat_auth_key.get_secret_value().strip()
+        if payload.wechat_auth_key
+        else ""
+    )
+    auth_key = request_key or config.wechat.auth_key.strip()
+    if "wechat" in payload.sources and not auth_key:
+        raise ValueError("使用微信公众号频道时，需要填写微信公众号 API Key")
+    return auth_key
+
+
 def generate_preview(payload: PreviewRequest) -> dict[str, object]:
     base_url, model, api_key = validate_ai_settings(payload)
     github_token = (
@@ -166,11 +180,14 @@ def generate_preview(payload: PreviewRequest) -> dict[str, object]:
     )
     config = load_web_config()
     validate_sources(payload, config)
+    wechat_auth_key = validate_wechat_settings(payload, config)
     config.profile.interests = payload.interests
     config.profile.daily_picks = 3
     config.github.language = payload.language
     if github_token:
         config.github.token = github_token
+    if wechat_auth_key:
+        config.wechat.auth_key = wechat_auth_key
     config.repo_llm.enabled = bool(api_key and model)
     config.repo_llm.api_key = api_key
     config.repo_llm.base_url = base_url or DEFAULT_AI_ENDPOINT
@@ -436,6 +453,7 @@ def create_app() -> FastAPI:
             config = load_web_config()
             validate_sources(payload, config)
             validate_ai_settings(payload)
+            validate_wechat_settings(payload, config)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         titles = {str(option["id"]): str(option["title"]) for option in source_options(config)}

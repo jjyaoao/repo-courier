@@ -1764,7 +1764,7 @@ footer p {
 
 .source-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -1818,6 +1818,18 @@ footer p {
   white-space: nowrap;
 }
 
+.source-key-hint {
+  flex: 0 0 auto;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: #f4e9df;
+  color: #8d5948;
+  font-family: var(--mono);
+  font-size: 6px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
 .source-option:has(input:checked) {
   border-color: var(--green);
   background: #f0f8eb;
@@ -1858,6 +1870,7 @@ footer p {
 }
 
 .key-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
 }
 
@@ -1898,6 +1911,13 @@ footer p {
   padding: 14px;
 }
 
+.key-fields a {
+  color: var(--green);
+  font-weight: 700;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
 .privacy-note {
   margin: 10px 2px 0;
   color: var(--muted);
@@ -1928,11 +1948,11 @@ footer {
 
 @media (max-width: 920px) {
   .source-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .key-list {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -1976,7 +1996,7 @@ footer {
   }
 
   .key-list {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .key-provider small {

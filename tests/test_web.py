@@ -69,6 +69,31 @@ def test_source_options_include_wechat_only_when_accounts_are_configured() -> No
 
     assert [option["id"] for option in options] == ["github", "news", "wechat"]
     assert options[-1]["source_count"] == 1
+    assert options[-1]["requires_key"] is True
+
+    config.wechat.auth_key = "server-secret"
+    assert web.source_options(config)[-1]["requires_key"] is False
+
+
+def test_wechat_source_requires_request_or_server_key() -> None:
+    config = config_with_news()
+    config.wechat = WechatConfig(accounts=[WechatAccountConfig("Account", "fake-1")])
+    payload = web.PreviewRequest(interests=["agent"], sources=["wechat"])
+
+    try:
+        web.validate_wechat_settings(payload, config)
+    except ValueError as exc:
+        assert "微信公众号 API Key" in str(exc)
+    else:
+        raise AssertionError("未配置 API Key 时微信公众号频道应被拒绝")
+
+    request_payload = web.PreviewRequest(
+        interests=["agent"], sources=["wechat"], wechat_auth_key="request-secret"
+    )
+    assert web.validate_wechat_settings(request_payload, config) == "request-secret"
+
+    config.wechat.auth_key = "server-secret"
+    assert web.validate_wechat_settings(payload, config) == "server-secret"
 
 
 def test_generate_preview_uses_request_scoped_config(monkeypatch) -> None:
@@ -100,6 +125,7 @@ def test_generate_preview_uses_request_scoped_config(monkeypatch) -> None:
             interests=["agent"],
             sources=["github"],
             github_token="github-secret",
+            wechat_auth_key="wechat-secret",
         )
     )
 
@@ -107,6 +133,7 @@ def test_generate_preview_uses_request_scoped_config(monkeypatch) -> None:
     assert config.profile.interests == ["agent"]
     assert config.profile.daily_picks == 3
     assert config.github.token == "github-secret"
+    assert config.wechat.auth_key == "wechat-secret"
     assert config.repo_llm.enabled is False
     assert config.repo_llm.api_key == ""
     assert config.push.enabled is False
@@ -343,17 +370,17 @@ def test_web_home_health_and_options_are_available() -> None:
     options = request(app, "GET", "/api/options")
 
     assert home.status_code == 200
-    assert "多个技术频道" in home.text
+    assert "七个技术频道" in home.text
     assert health.json() == {"status": "ok"}
     assert {source["id"] for source in options.json()["sources"]} == {
         "github",
         "news",
         "blogs",
         "academic",
-            "products",
-            "security",
-            "wechat",
-        }
+        "products",
+        "security",
+        "wechat",
+    }
 
 
 def test_web_rejects_oversized_requests_without_echoing_content() -> None:
@@ -372,6 +399,7 @@ def test_web_rejects_oversized_requests_without_echoing_content() -> None:
 
 def test_web_validation_errors_do_not_echo_secret_fields() -> None:
     github_secret = "github-secret-" + "x" * 500
+    wechat_secret = "wechat-secret-" + "x" * 500
     ai_secret = "ai-secret-" + "x" * 500
     response = request(
         web.create_app(),
@@ -380,6 +408,7 @@ def test_web_validation_errors_do_not_echo_secret_fields() -> None:
         json={
             "interests": ["agent"],
             "github_token": github_secret,
+            "wechat_auth_key": wechat_secret,
             "ai_api_key": ai_secret,
             "ai_model": "model",
         },
@@ -387,5 +416,6 @@ def test_web_validation_errors_do_not_echo_secret_fields() -> None:
 
     assert response.status_code == 422
     assert github_secret not in response.text
+    assert wechat_secret not in response.text
     assert ai_secret not in response.text
     assert '"input"' not in response.text

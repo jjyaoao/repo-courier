@@ -96,10 +96,10 @@ export GITHUB_TOKEN="your-fine-grained-token"
 
 Web Beta 提供一个简约的单次情报页面：
 
-- 动态读取 GitHub 和 `config.yaml` 中的 RSS 频道。
+- 动态读取 GitHub、微信公众号和 `config.yaml` 中的 RSS 频道。
 - 多选情报频道，每个频道最多精选 3 条。
 - 所选频道有限并行处理，并通过流式响应逐个展示已完成的频道。
-- 可选填写自己的 GitHub Token，以及 OpenAI 兼容服务的 API 地址、模型名称与 API Key。
+- 可按需填写自己的 GitHub Token、微信公众号 API Key，以及 OpenAI 兼容服务的 API 地址、模型名称与 API Key。
 - Web 页面可填写 API 根地址（如 `https://api.openai.com/v1`）或完整的 `chat/completions` 地址。
 - 密钥仅在本次请求内存中使用，不写入报告、日志、数据库或浏览器存储。
 - 公共 Web 实例只生成预览，不代替用户发送飞书、微信或 QQ 消息。
@@ -132,7 +132,7 @@ uv run repo-courier --channels news,blogs --date 2026-07-15 --dry-run
 不传 `--channels` 时，按 `config.yaml` 中每个频道的 `enabled` 开关运行。可用值为：
 
 ```text
-github, news, blogs, academic, products, security, all
+github, wechat, news, blogs, academic, products, security, all
 ```
 
 ## 每天自动生成和推送
@@ -142,6 +142,7 @@ github, news, blogs, academic, products, security, all
 | 能力 | Secret |
 | --- | --- |
 | GitHub 仓库元数据 | `GITHUB_TOKEN` |
+| 微信公众号文章 | `WECHAT_AUTH_KEY` |
 | AI 分析 | `REPO_LLM_API_KEY`、`REPO_LLM_BASE_URL`、`REPO_LLM_MODEL` |
 | 飞书群机器人 | `FEISHU_WEBHOOK` |
 | 企业微信群机器人 | `WECOM_WEBHOOK` |
@@ -153,7 +154,7 @@ github, news, blogs, academic, products, security, all
 ## 工作流程
 
 ```text
-GitHub Trending / RSS / Atom
+微信公众号 / GitHub Trending / RSS / Atom
               ↓
     日期窗口与关键词去噪
               ↓
@@ -183,6 +184,7 @@ src/repo_courier/
 ├── trending.py       # GitHub Trending 抓取
 ├── github.py         # GitHub 元数据与 README
 ├── feeds.py          # 统一 RSS / Atom 抓取、分析与排序
+├── wechat.py         # 微信公众号文章抓取与分析
 ├── prompts/          # 各频道 AI 分析提示词
 ├── personalize.py    # GitHub 个性化排序
 ├── report.py         # Markdown / HTML / JSON 报告
