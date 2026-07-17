@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, replace
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
 from .config import AppConfig
@@ -40,7 +40,7 @@ def run(
     channels: list[str] | None = None,
 ) -> RunResult:
     today = datetime.now(BEIJING).date()
-    rss_day = day or (today - timedelta(days=1))
+    rss_day = day or today
     report_day = today
     repositories: list[Repository] = []
     picks: list[Repository] = []

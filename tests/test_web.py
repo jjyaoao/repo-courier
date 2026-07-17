@@ -67,12 +67,12 @@ def test_source_options_include_wechat_only_when_accounts_are_configured() -> No
     config.wechat = WechatConfig(accounts=[WechatAccountConfig("Account", "fake-1")])
     options = web.source_options(config)
 
-    assert [option["id"] for option in options] == ["github", "news", "wechat"]
-    assert options[-1]["source_count"] == 1
-    assert options[-1]["requires_key"] is True
+    assert [option["id"] for option in options] == ["wechat", "github", "news"]
+    assert options[0]["source_count"] == 1
+    assert options[0]["requires_key"] is True
 
     config.wechat.auth_key = "server-secret"
-    assert web.source_options(config)[-1]["requires_key"] is False
+    assert web.source_options(config)[0]["requires_key"] is False
 
 
 def test_wechat_source_requires_request_or_server_key() -> None:
@@ -213,6 +213,20 @@ def test_ai_base_url_must_be_explicitly_allowed(monkeypatch) -> None:
         assert "未被当前站点允许" in str(exc)
     else:
         raise AssertionError("未在白名单中的模型地址应被拒绝")
+
+
+def test_official_openai_compatible_providers_are_allowed_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("REPO_COURIER_ALLOWED_AI_BASE_URLS", raising=False)
+
+    for base_url in web.OFFICIAL_AI_BASE_URLS:
+        payload = web.PreviewRequest(
+            interests=["agent"],
+            ai_base_url=base_url,
+            ai_model="provider-model",
+            ai_api_key="secret",
+        )
+        endpoint, _, _ = web.validate_ai_settings(payload)
+        assert endpoint.endswith("/chat/completions")
 
 
 def test_ai_base_url_accepts_root_and_normalizes_endpoint(monkeypatch) -> None:
@@ -361,6 +375,88 @@ def test_stream_preview_times_out_slow_channel(monkeypatch) -> None:
     ]
     assert events[2]["message"] == "该频道处理超时"
     assert events[-1]["failed"] == 1
+
+
+def test_stream_preview_treats_reported_upstream_failure_as_channel_error(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(web, "load_web_config", config_with_news)
+
+    def failed_preview(payload):
+        source = payload.sources[0]
+        return {
+            "scanned_count": 0,
+            "rss_scanned_count": 0,
+            "repositories": [],
+            "channels": [
+                {
+                    "id": source,
+                    "status": "error",
+                    "message": "上游服务拒绝访问",
+                    "items": [],
+                }
+            ],
+            "sources": [source],
+            "used_ai": False,
+        }
+
+    monkeypatch.setattr(web, "generate_preview", failed_preview)
+    response = request(
+        web.create_app(),
+        "POST",
+        "/api/preview/stream",
+        json={"interests": ["agent"], "sources": ["news"]},
+    )
+    events = [json.loads(line) for line in response.text.splitlines() if line]
+
+    assert [event["type"] for event in events] == [
+        "start",
+        "channel_started",
+        "channel_error",
+        "complete",
+    ]
+    assert events[2]["message"] == "上游服务拒绝访问"
+    assert events[-1]["failed"] == 1
+
+
+def test_stream_preview_reports_request_scoped_wechat_key_without_exposing_it(
+    monkeypatch,
+) -> None:
+    config = config_with_news()
+    config.wechat = WechatConfig(accounts=[WechatAccountConfig("Account", "fake-1")])
+    monkeypatch.setattr(web, "load_web_config", lambda: config)
+
+    def failed_preview(payload):
+        assert payload.wechat_auth_key.get_secret_value() == "request-secret"
+        return {
+            "channels": [
+                {
+                    "id": "wechat",
+                    "status": "error",
+                    "message": "公众号接口拒绝访问",
+                    "items": [],
+                }
+            ]
+        }
+
+    monkeypatch.setattr(web, "generate_preview", failed_preview)
+    response = request(
+        web.create_app(),
+        "POST",
+        "/api/preview/stream",
+        json={
+            "interests": ["agent"],
+            "sources": ["wechat"],
+            "wechat_auth_key": "request-secret",
+        },
+    )
+    events = [json.loads(line) for line in response.text.splitlines() if line]
+
+    started = next(event for event in events if event["type"] == "channel_started")
+    failed = next(event for event in events if event["type"] == "channel_error")
+    assert started["credential_source"] == "request"
+    assert failed["credential_source"] == "request"
+    assert "request-secret" not in response.text
 
 
 def test_web_home_health_and_options_are_available() -> None:

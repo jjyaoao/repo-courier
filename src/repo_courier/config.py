@@ -35,9 +35,7 @@ class RepoLlmConfig:
 
 @dataclass(slots=True)
 class ProfileConfig:
-    interests: list[str] = field(
-        default_factory=lambda: ["agent", "llm", "mcp", "developer tools", "automation"]
-    )
+    interests: list[str] = field(default_factory=lambda: ["agent", "llm", "mcp", "ai"])
     exclude_keywords: list[str] = field(
         default_factory=lambda: ["awesome list", "interview", "tutorial collection"]
     )

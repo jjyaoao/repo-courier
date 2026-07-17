@@ -317,13 +317,23 @@ def analyze_channel_items(
     defaults: RssDefaultsConfig,
     analyzer: RssAnalyzer,
 ) -> ChannelRun:
-    shortlist = sorted(items, key=_rule_sort_key)[: defaults.llm_candidates]
+    shortlist = _select_with_keyword_coverage(
+        items,
+        profile.interests,
+        defaults.llm_candidates,
+        _rule_sort_key,
+    )
     workers = max(1, min(defaults.max_analysis_workers, len(shortlist) or 1))
     with ThreadPoolExecutor(max_workers=workers) as executor:
         list(executor.map(lambda item: analyzer.analyze(item, profile), shortlist))
     for item in shortlist:
         item.final_score = combined_score(item)
-    picks = sorted(shortlist, key=_final_sort_key)[: defaults.top_k]
+    picks = _select_with_keyword_coverage(
+        shortlist,
+        profile.interests,
+        defaults.top_k,
+        _final_sort_key,
+    )
     for rank, item in enumerate(picks, start=1):
         item.pick_rank = rank
     logger.info(
@@ -334,6 +344,36 @@ def analyze_channel_items(
         len(picks),
     )
     return ChannelRun(channel_id, title, picks, len(items), len(shortlist), errors)
+
+
+def _select_with_keyword_coverage(
+    items: list[RssItem],
+    interests: list[str],
+    limit: int,
+    sort_key: Callable[[RssItem], tuple[float, float, str]],
+) -> list[RssItem]:
+    ordered = sorted(items, key=sort_key)
+    selected: list[RssItem] = []
+    covered: set[str] = set()
+    for interest in interests:
+        if interest in covered:
+            continue
+        candidate = next(
+            (
+                item
+                for item in ordered
+                if item not in selected and interest in item.matched_keywords
+            ),
+            None,
+        )
+        if candidate is None:
+            continue
+        selected.append(candidate)
+        covered.update(candidate.matched_keywords)
+        if len(selected) >= limit:
+            return selected
+    selected.extend(item for item in ordered if item not in selected)
+    return selected[:limit]
 
 
 @dataclass(slots=True)

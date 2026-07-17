@@ -50,7 +50,7 @@
               <div class="interest-row">
                 <div class="field-block interest-field">
                   <label class="sr-only" for="interests">关注词</label>
-                  <input id="interests" name="interests" maxlength="420" placeholder="agent, llm, mcp, developer tools, security" value="agent, llm, mcp, developer tools, automation, security" required />
+                  <input id="interests" name="interests" maxlength="420" placeholder="agent, llm, mcp, ai" value="agent, llm, mcp, ai" required />
                 </div>
                 <div class="field-block language-field">
                   <label class="sr-only" for="language">GitHub 语言筛选</label>
@@ -73,19 +73,31 @@
                   </div>
                 </details>
                 <details id="wechat-key-panel" class="key-panel">
-                  <summary><span class="key-provider"><b>微</b><span><strong>微信公众号 API</strong><small>读取预设公众号文章</small></span></span><span class="key-action">添加 <i aria-hidden="true"></i></span></summary>
+                  <summary><span class="key-provider"><b>微</b><span><strong>微信公众号 API</strong><small id="wechat-key-summary">读取预设公众号文章</small></span></span><span id="wechat-key-action" class="key-action">添加 <i aria-hidden="true"></i></span></summary>
                   <div class="key-fields">
                     <label class="field-label" for="wechat-auth-key">API Key</label>
                     <div class="password-wrap"><input id="wechat-auth-key" name="wechat-auth-key" type="password" autocomplete="off" placeholder="微信公众号抓取服务 API Key" /><button class="reveal-key" type="button" data-target="wechat-auth-key">显示</button></div>
-                    <p>选择微信公众号频道时使用。可前往 <a href="https://down.mptext.top/dashboard/api" target="_blank" rel="noreferrer">mptext API 控制台 ↗</a> 获取。</p>
+                    <p id="wechat-key-note">选择微信公众号频道时使用。可前往 <a href="https://down.mptext.top/dashboard/api" target="_blank" rel="noreferrer">mptext API 控制台 ↗</a> 获取。</p>
                   </div>
                 </details>
                 <details class="key-panel">
                   <summary><span class="key-provider"><b>AI</b><span><strong>OpenAI 兼容 AI</strong><small>接入兼容 Chat Completions 的模型</small></span></span><span class="key-action">添加 <i aria-hidden="true"></i></span></summary>
                   <div class="key-fields">
+                    <div class="field-block ai-provider-field">
+                      <label class="field-label" for="ai-provider">模型服务商</label>
+                      <select id="ai-provider" name="ai-provider">
+                        <option value="openai">OpenAI</option>
+                        <option value="claude">Claude</option>
+                        <option value="zhipu">智谱 GLM</option>
+                        <option value="kimi">Kimi</option>
+                        <option value="minimax">MiniMax</option>
+                        <option value="stepfun">阶跃星辰</option>
+                        <option value="custom">自定义兼容服务</option>
+                      </select>
+                    </div>
                     <label class="field-label" for="ai-base-url">API 根地址或 Chat Completions 地址</label>
                     <input id="ai-base-url" name="ai-base-url" type="url" value="https://api.openai.com/v1" placeholder="https://api.example.com/v1" autocomplete="off" />
-                    <p class="ai-compatibility-note">支持 OpenAI 兼容服务；填写 API 根地址时会自动补全 <code>/chat/completions</code>。自部署服务需将地址加入允许列表。</p>
+                    <p id="ai-compatibility-note" class="ai-compatibility-note">已适配 OpenAI 的 Chat Completions 接口；仍可修改模型名称。</p>
                     <div class="field-row compact-row">
                       <div class="field-block"><label class="field-label" for="ai-model">模型名称</label><input id="ai-model" name="ai-model" autocomplete="off" placeholder="your-model-name" /></div>
                       <div class="field-block"><label class="field-label" for="ai-api-key">API Key</label><div class="password-wrap"><input id="ai-api-key" name="ai-api-key" type="password" autocomplete="off" placeholder="sk-..." /><button class="reveal-key" type="button" data-target="ai-api-key">显示</button></div></div>
@@ -93,7 +105,7 @@
                   </div>
                 </details>
               </div>
-              <p class="privacy-note"><span aria-hidden="true">●</span> 密钥仅用于本次请求，不会保存</p>
+              <p class="privacy-note"><span aria-hidden="true">●</span> 密钥只保留在当前页面，不会保存到服务端；刷新后清除</p>
             </fieldset>
 
             <div class="submit-row">
@@ -115,7 +127,7 @@
           <div class="results-heading"><div><p class="eyebrow"><span>03</span> YOUR DAILY SIGNALS</p><h2 id="results-title">今天值得看的</h2></div><p id="scan-summary" class="scan-summary"></p></div>
           <div id="github-results" class="result-channel" hidden><div class="channel-title"><span class="channel-icon">GH</span><h3>GitHub Trending</h3><i></i></div><div id="result-list" class="result-list"></div></div>
           <div id="channel-results"></div>
-          <div id="empty-result" class="empty-result" hidden><span aria-hidden="true">∅</span><h3>今天没有足够相关的信号</h3><p>可以放宽关注词，或选择更多频道后重试。</p></div>
+          <div id="empty-result" class="empty-result" hidden><span aria-hidden="true">∅</span><h3 id="empty-result-title">今天没有足够相关的信号</h3><p id="empty-result-description">可以放宽关注词，或选择更多频道后重试。</p></div>
         </section>
       </main>
 
